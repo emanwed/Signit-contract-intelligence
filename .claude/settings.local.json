@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(unzip -l baseerah-starter-kit.zip)",
+      "Bash(npm --version)",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)",
+      "Bash(npx --yes create-next-app@latest . --typescript --tailwind --app --eslint --src-dir --use-npm --no-import-alias --yes)",
+      "Bash(npm ping *)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(mkdir -p /Users/emanwed/SignIt/reference && cp /Users/emanwed/Downloads/files/baseerah-starter-kit/reference/baseerah.jsx /Users/emanwed/SignIt/reference/ && echo \"reference copied\")",
+      "Bash(curl -s http://localhost:3000/)",
+      "Bash(curl -s -X POST http://localhost:3000/api/ask -H \"Content-Type: application/json\" -d '{\"question\":\"liability cap\",\"portfolio\":[]}')",
+      "Bash(lsof -ti:3000)",
+      "Bash(xargs kill)"
+    ]
+  }
+}
