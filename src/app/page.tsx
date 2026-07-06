@@ -25,6 +25,7 @@ import { PrototypeBar, PROTOTYPE_BAR_H } from "@/components/PrototypeBar";
 import { Overview } from "@/components/Overview";
 import { ObligationsCalendar } from "@/components/ObligationsCalendar";
 import { SemanticSearch } from "@/components/SemanticSearch";
+import { ContradictionRadar } from "@/components/ContradictionRadar";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { AskFab } from "@/components/AskFab";
 import { Drawer } from "@/components/Drawer";
@@ -34,6 +35,7 @@ import { ProGate } from "@/components/PlanGate";
 import { PlanCompareModal } from "@/components/PlanCompare";
 import { MakeRoomModal } from "@/components/MakeRoomModal";
 import { contractStatus } from "@/lib/status";
+import { findContradictions } from "@/lib/contradictions";
 import { FREE_UPLOAD_LIMIT, isFreeWorkspaceContract } from "@/lib/plan";
 import type { Alert } from "@/lib/alerts";
 import type { Dict } from "@/lib/i18n";
@@ -53,6 +55,7 @@ const TAB_LABEL: Record<TabKey, keyof Dict> = {
   overview: "overview",
   obligations: "obTab",
   search: "ssTab",
+  radar: "radarTab",
   notifications: "notifications",
   notifsettings: "notifSettingsTab",
   settings: "complianceTab",
@@ -62,7 +65,7 @@ export default function Page() {
   const { lang, L, plan, setPlan, upgradeOpen, setUpgradeOpen } = useApp();
   const { contracts, resetContracts } = useContracts();
   const { getState, resetNotifications } = useNotifications();
-  const { resetSettings } = useSettings();
+  const { checks, resetSettings } = useSettings();
   const free = plan === "free";
 
   const [section, setSection] = useState<Section>("contracts");
@@ -114,6 +117,15 @@ export default function Page() {
       return true;
     }).length;
   }, [contracts, free, persona, getState]);
+
+  // Contradiction-radar badge — open (unresolved) cross-portfolio conflicts.
+  // Free is Pro-gated out of the radar, so it shows no count there.
+  const radarCount = useMemo(() => {
+    if (free) return 0;
+    return findContradictions(contracts, checks).filter(
+      (it) => !getState(`contra-${it.id}`).done,
+    ).length;
+  }, [free, contracts, checks, getState]);
 
   useEffect(() => {
     if (!notice) return;
@@ -222,6 +234,7 @@ export default function Page() {
     tab,
     onTab,
     actionCount: openActions,
+    radarCount,
   };
 
   return (
@@ -297,6 +310,12 @@ export default function Page() {
                   <ProGate title={L.ssTab} body={L.ssIntro} />
                 ) : (
                   <SemanticSearch onOpen={setActive} />
+                ))}
+              {tab === "radar" &&
+                (free ? (
+                  <ProGate title={L.radarTab} body={L.radarIntro} />
+                ) : (
+                  <ContradictionRadar onOpen={setActive} />
                 ))}
               {tab === "notifications" && (
                 <ObligationsCalendar

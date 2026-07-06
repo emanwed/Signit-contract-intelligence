@@ -7,6 +7,7 @@ export type TabKey =
   | "overview"
   | "obligations"
   | "search"
+  | "radar"
   | "notifications"
   | "notifsettings"
   | "settings";

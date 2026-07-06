@@ -1,5 +1,3 @@
-import { CONTRACTS } from "@/data/contracts";
-import { contractStatus } from "./status";
 import type { Contract } from "./types";
 
 /** Subscription tier used to gate features across the prototype. */
@@ -18,21 +16,13 @@ export const FREE_FACT_KEYS = new Set(["value", "renewal", "term"]);
 export const isPro = (plan: Plan) => plan === "paid";
 
 /**
- * The fixed starter contracts a Free workspace begins with — always the same
- * `FREE_UPLOAD_LIMIT` seed contracts, resolved once from the static demo
- * dataset (not "whichever are active right now"). Deleting one shrinks the
- * Free view permanently instead of backfilling from the much larger seed
- * portfolio, which is what previously kept the list stuck at 3.
- */
-const FREE_SEED_IDS = new Set(
-  CONTRACTS.filter((c) => contractStatus(c) === "active")
-    .slice(0, FREE_UPLOAD_LIMIT)
-    .map((c) => c.id),
-);
-
-/**
- * Whether a contract counts toward a Free workspace's contract list: one of
- * its starter seed contracts (until deleted) plus anything the user uploaded.
+ * Whether a contract belongs to a Free workspace's list. A Free workspace is
+ * exactly the user's own contracts — the `FREE_UPLOAD_LIMIT` sample "uploads"
+ * it ships with (source `"added"`), plus anything the user uploads. The rest
+ * of the seed portfolio is Pro-only sample data. Deleting one shrinks the list
+ * for good (no backfill from the larger seed set), and these same contracts
+ * are what the Free insights are computed from — so the list and the KPIs
+ * always agree.
  */
 export const isFreeWorkspaceContract = (c: Contract): boolean =>
-  FREE_SEED_IDS.has(c.id) || c.source === "added";
+  c.source === "added";

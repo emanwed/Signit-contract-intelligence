@@ -63,6 +63,26 @@ export function PrototypeBar({
             {L.prototype}
           </span>
         </div>
+
+        <button
+          onClick={onReset}
+          title={L.resetDemo}
+          className="tap flex items-center gap-1.5 px-2.5 py-1 shrink-0 whitespace-nowrap"
+          style={{
+            fontSize: 11.5,
+            fontWeight: 600,
+            color: "#eceafd",
+            background: "rgba(255,255,255,.07)",
+            border: "1px solid #2c2a45",
+            borderRadius: 8,
+          }}
+        >
+          <RotateCcw size={13} className="rtl-flip" color="#b7adf5" />
+          <span className="hidden sm:inline">{L.resetDemo}</span>
+        </button>
+
+        <div className="shrink-0" style={{ width: 1, height: 18, background: "#2c2a45" }} />
+
         <span className="shrink-0" style={{ fontSize: 11.5, opacity: 0.6 }}>
           {L.viewAs}
         </span>
@@ -134,25 +154,6 @@ export function PrototypeBar({
         >
           <Table2 size={13} />
           <span className="hidden sm:inline">{L.planCompare}</span>
-        </button>
-
-        <div className="shrink-0" style={{ width: 1, height: 18, background: "#2c2a45" }} />
-
-        <button
-          onClick={onReset}
-          title={L.resetDemo}
-          className="tap flex items-center gap-1.5 px-2.5 py-1 shrink-0 whitespace-nowrap"
-          style={{
-            fontSize: 11.5,
-            fontWeight: 600,
-            color: "#eceafd",
-            background: "rgba(255,255,255,.07)",
-            border: "1px solid #2c2a45",
-            borderRadius: 8,
-          }}
-        >
-          <RotateCcw size={13} className="rtl-flip" color="#b7adf5" />
-          <span className="hidden sm:inline">{L.resetDemo}</span>
         </button>
       </div>
     </div>

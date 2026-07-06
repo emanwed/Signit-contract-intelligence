@@ -227,6 +227,22 @@ export interface Dict {
   obSimNote: string;
   obEmpty: string;
   ssTab: string;
+  radarTab: string;
+  radarIntro: string;
+  radarRec: string;
+  radarEmptyTitle: string;
+  radarEmpty: string;
+  radarLogAction: string;
+  radarAssignPlaceholder: string;
+  radarReopen: string;
+  radarResolvedCount: string;
+  radarRelated: string;
+  radarConflictCards: string;
+  askClauseHint: string;
+  askClauseCta: string;
+  askClauseStandard: string;
+  askClauseWhy: string;
+  askClauseLinked: string;
   notifSettingsTab: string;
   complianceTab: string;
   notifSettingsIntro: string;
@@ -344,6 +360,7 @@ export interface Dict {
   taskDone: string;
   taskReopen: string;
   taskViewContract: string;
+  taskRelatedContract: string;
   taskOutcome: string;
   taskOutcomePrompt: string;
   taskNextStep: string;
@@ -504,7 +521,7 @@ export const T: Record<Lang, Dict> = {
     viewAs: "العرض بصفة",
     prototype: "نموذج أولي",
     planLabel: "الخطة",
-    resetDemo: "إعادة تعيين العرض",
+    resetDemo: "إعادة ضبط بيانات النموذج الأولي",
     resetDemoDone: "تمت إعادة تعيين العرض إلى حالته الأصلية",
     planFree: "مجانية",
     planPaid: "احترافية",
@@ -575,6 +592,24 @@ export const T: Record<Lang, Dict> = {
     obSimNote: "التنبيهات محاكاة في النموذج الأولي.",
     obEmpty: "لا التزامات مسجّلة.",
     ssTab: "بحث دلالي",
+    radarTab: "رادار التناقضات",
+    radarIntro:
+      "يرصد الرادار العقود التي تتعارض شروطها مع بعضها عبر المحفظة — تخزين البيانات، سقف المسؤولية، نافذة إشعار التجديد، والاختصاص القضائي — ليكشف المواضع التي تتبنّى فيها المؤسسة موقفين متناقضين. اضغط أي عقد لفتحه.",
+    radarRec: "التوصية",
+    radarEmptyTitle: "لا تناقضات في المحفظة",
+    radarEmpty:
+      "شروط عقودكم النشطة متّسقة عبر الأبعاد المراقَبة. سيظهر أي تعارض جديد هنا فور رفع عقد يخالف الباقي.",
+    radarLogAction: "سجّل الإجراء",
+    radarAssignPlaceholder: "تعيين لفريق",
+    radarReopen: "إعادة الفتح",
+    radarResolvedCount: "تمّت معالجته",
+    radarRelated: "العقود المتعارضة",
+    radarConflictCards: "عقود متعارضة",
+    askClauseHint: "حدّد نصًا لشرحه",
+    askClauseCta: "اشرح هذا البند",
+    askClauseStandard: "قياسي أم لا؟",
+    askClauseWhy: "لماذا يهمّك",
+    askClauseLinked: "مرتبط ببند مُستخرَج",
     notifSettingsTab: "إعدادات التنبيهات",
     complianceTab: "الامتثال والسياسات",
     notifSettingsIntro: "اختر كيف تصلك التنبيهات وأي أنواع منها تريد أن تستقبل.",
@@ -698,6 +733,7 @@ export const T: Record<Lang, Dict> = {
     taskDone: "منجَز",
     taskReopen: "إعادة فتح",
     taskViewContract: "عرض العقد",
+    taskRelatedContract: "العقد المرتبط",
     taskOutcome: "الإجراء المتّخذ",
     taskOutcomePrompt: "سجّل ما تم لتحديث النظام وإنشاء الإجراء التالي:",
     taskNextStep: "الخطوة التالية في النظام",
@@ -882,7 +918,7 @@ export const T: Record<Lang, Dict> = {
     viewAs: "View as",
     prototype: "Prototype",
     planLabel: "Plan",
-    resetDemo: "Reset demo",
+    resetDemo: "Reset prototype data",
     resetDemoDone: "Demo reset to its original state",
     planFree: "Free",
     planPaid: "Pro",
@@ -953,6 +989,24 @@ export const T: Record<Lang, Dict> = {
     obSimNote: "Alerts are simulated in this prototype.",
     obEmpty: "No obligations tracked.",
     ssTab: "Semantic search",
+    radarTab: "Contradiction radar",
+    radarIntro:
+      "The radar flags contracts whose terms conflict with each other across the portfolio — data residency, liability floor, renewal-notice window, and jurisdiction — exposing where the organisation holds two positions it can't both defend. Click any contract to open it.",
+    radarRec: "Recommendation",
+    radarEmptyTitle: "No contradictions in the portfolio",
+    radarEmpty:
+      "Your active contracts are consistent across the monitored dimensions. Any new conflict will appear here as soon as a contract deviates from the rest.",
+    radarLogAction: "Log the action",
+    radarAssignPlaceholder: "Assign to a team",
+    radarReopen: "Reopen",
+    radarResolvedCount: "resolved",
+    radarRelated: "Conflicting contracts",
+    radarConflictCards: "conflicting contracts",
+    askClauseHint: "Select text to explain",
+    askClauseCta: "Explain this clause",
+    askClauseStandard: "Standard vs. your playbook",
+    askClauseWhy: "Why it matters",
+    askClauseLinked: "Linked to an extracted clause",
     notifSettingsTab: "Notification settings",
     complianceTab: "Compliance & policies",
     notifSettingsIntro: "Choose how alerts reach you and which types you want to receive.",
@@ -1076,6 +1130,7 @@ export const T: Record<Lang, Dict> = {
     taskDone: "Done",
     taskReopen: "Reopen",
     taskViewContract: "View contract",
+    taskRelatedContract: "Related contract",
     taskOutcome: "Action taken",
     taskOutcomePrompt: "Log what happened so the system updates and schedules the next action:",
     taskNextStep: "System's next step",

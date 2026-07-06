@@ -301,21 +301,27 @@ export function AlertDetail({
           </div>
 
           {contract && (
-            <button
-              onClick={() => onOpenContract(contract)}
-              className="tap flex items-center gap-1.5 mt-3"
-              style={{
-                fontSize: 12.5,
-                fontWeight: 600,
-                color: "var(--accent)",
-                background: "var(--accent-soft)",
-                border: "1px solid var(--border)",
-                borderRadius: 9,
-                padding: "7px 12px",
-              }}
-            >
-              <FileText size={14} /> {L.taskViewContract} · {contract.id}
-            </button>
+            <Section title={L.taskRelatedContract} icon={FileText}>
+              <button
+                onClick={() => onOpenContract(contract)}
+                className="tap flex items-center gap-2 text-start w-full"
+                style={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 10,
+                  padding: "9px 11px",
+                }}
+              >
+                <FileText size={14} color="var(--accent)" className="shrink-0" />
+                <span
+                  className="min-w-0 flex-1 truncate"
+                  style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text)" }}
+                >
+                  {lang === "ar" ? contract.title_ar : contract.title_en}
+                </span>
+                <span style={{ fontSize: 11, color: "var(--text-soft)" }}>{contract.id}</span>
+              </button>
+            </Section>
           )}
 
           {/* Assignee — team assignment is a Pro feature; reassigning is

@@ -1,18 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   AlertTriangle,
   ArrowLeft,
   ChevronLeft,
   Download,
   FileText,
+  Info,
   ListChecks,
   Lock,
   Pencil,
   ShieldAlert,
   ShieldCheck,
+  Sparkles,
   Trash2,
+  X,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { useContracts } from "@/context/ContractsContext";
@@ -23,6 +27,7 @@ import { exportContract } from "@/lib/exportContract";
 import { fmtDate, fmtGreg, money } from "@/lib/format";
 import { factLabel } from "@/lib/i18n";
 import { deviationText, playbookDeviations } from "@/lib/playbook";
+import { explainClause, type ClauseExplanation } from "@/lib/clauseExplain";
 import { FREE_FACT_KEYS } from "@/lib/plan";
 import { RiskPanel } from "./RiskPanel";
 import { EditContractModal } from "./EditContractModal";
@@ -571,12 +576,57 @@ function DocumentView({
   sourceNote: string;
 }) {
   const { L } = useApp();
+  const { checks } = useSettings();
   const text = documentText(c, lang);
   const isReconstructed = !c.docText || c.docText.trim().length === 0;
   const nodes = useMemo(
     () => (c.docDataUrl ? [] : highlightClauses(text, c, lang)),
     [text, c, lang],
   );
+
+  // Highlight-to-ask: selecting any clause in the text below offers an inline,
+  // plain-language explanation (what it means, standard vs. your playbook, why
+  // it matters). `sel` anchors the floating popover to the selection (viewport
+  // coords → position:fixed); `exp` holds the computed explanation once asked.
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
+  const [sel, setSel] = useState<{ text: string; x: number; y: number } | null>(
+    null,
+  );
+  const [exp, setExp] = useState<ClauseExplanation | null>(null);
+
+  const clearAsk = () => {
+    setSel(null);
+    setExp(null);
+  };
+
+  const onSelect = () => {
+    const s = window.getSelection();
+    if (!s || s.isCollapsed || s.rangeCount === 0) return;
+    const range = s.getRangeAt(0);
+    const body = bodyRef.current;
+    if (!body || !body.contains(range.commonAncestorContainer)) return;
+    const picked = s.toString().trim();
+    if (picked.length < 6) return;
+    const r = range.getBoundingClientRect();
+    setSel({ text: picked, x: r.left + r.width / 2, y: r.bottom });
+    setExp(null);
+  };
+
+  // Dismiss on outside click / Escape while the popover is open.
+  useEffect(() => {
+    if (!sel) return;
+    const onDown = (e: MouseEvent) => {
+      if (popRef.current && !popRef.current.contains(e.target as Node)) clearAsk();
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && clearAsk();
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [sel]);
 
   if (c.docDataUrl) {
     return (
@@ -604,18 +654,30 @@ function DocumentView({
 
   return (
     <div className="mt-3">
-      <div
-        className="flex items-center gap-1.5 mb-2"
-        style={{ fontSize: 11.5, color: "var(--text-soft)", fontWeight: 600 }}
-      >
-        <FileText size={13} />{" "}
-        {c.docFileName
-          ? c.docFileName
-          : isReconstructed
-            ? L.docReconstructed
-            : sourceNote}
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div
+          className="flex items-center gap-1.5 min-w-0"
+          style={{ fontSize: 11.5, color: "var(--text-soft)", fontWeight: 600 }}
+        >
+          <FileText size={13} className="shrink-0" />{" "}
+          <span className="truncate">
+            {c.docFileName
+              ? c.docFileName
+              : isReconstructed
+                ? L.docReconstructed
+                : sourceNote}
+          </span>
+        </div>
+        <div
+          className="flex items-center gap-1 shrink-0"
+          style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600 }}
+        >
+          <Sparkles size={12} /> {L.askClauseHint}
+        </div>
       </div>
       <div
+        ref={bodyRef}
+        onMouseUp={onSelect}
         className="scroll-slim"
         style={{
           background: "var(--surface)",
@@ -632,6 +694,213 @@ function DocumentView({
         }}
       >
         {nodes}
+      </div>
+
+      {sel && (
+        <ClauseAsk
+          popRef={popRef}
+          anchor={sel}
+          lang={lang}
+          exp={exp}
+          onAsk={() => setExp(explainClause(sel.text, c, checks))}
+          onClose={clearAsk}
+        />
+      )}
+    </div>
+  );
+}
+
+const VERDICT_META = {
+  ok: { icon: ShieldCheck, color: "var(--low)" },
+  flag: { icon: ShieldAlert, color: "var(--high)" },
+  info: { icon: Info, color: "var(--text-soft)" },
+} as const;
+
+/**
+ * Floating highlight-to-ask popover, anchored to the text selection. First a
+ * compact "explain this clause" chip; on click it expands into the explanation
+ * card (plain meaning · standard vs. playbook · why it matters).
+ */
+function ClauseAsk({
+  popRef,
+  anchor,
+  lang,
+  exp,
+  onAsk,
+  onClose,
+}: {
+  popRef: React.RefObject<HTMLDivElement | null>;
+  anchor: { text: string; x: number; y: number };
+  lang: Lang;
+  exp: ClauseExplanation | null;
+  onAsk: () => void;
+  onClose: () => void;
+}) {
+  const { L } = useApp();
+  const ar = lang === "ar";
+  const width = exp ? 320 : 200;
+  const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
+  const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+  // Position by the popover's own left edge (centred on the selection, then
+  // clamped fully inside the viewport). We deliberately avoid a translateX
+  // centring transform: the `.rise` entrance animation animates `transform`
+  // and would clobber it, spilling the card off-screen.
+  const left = Math.max(10, Math.min(anchor.x - width / 2, vw - width - 10));
+  const top = Math.max(10, Math.min(anchor.y + 8, vh - (exp ? 320 : 60)));
+
+  if (typeof document === "undefined") return null;
+
+  // Portal to <body> so the fixed position uses viewport coordinates — the
+  // drawer's own transform would otherwise become the containing block.
+  return createPortal(
+    <div
+      ref={popRef}
+      dir={ar ? "rtl" : "ltr"}
+      className="rise"
+      style={{
+        position: "fixed",
+        left,
+        top,
+        width,
+        zIndex: 9999,
+      }}
+    >
+      {!exp ? (
+        <button
+          onClick={onAsk}
+          className="tap flex items-center gap-1.5 w-full justify-center"
+          style={{
+            background: "var(--cta)",
+            color: "var(--cta-ink)",
+            border: "none",
+            borderRadius: 999,
+            padding: "8px 14px",
+            fontSize: 12.5,
+            fontWeight: 700,
+            boxShadow: "var(--shadow)",
+          }}
+        >
+          <Sparkles size={14} /> {L.askClauseCta}
+        </button>
+      ) : (
+        <div
+          style={{
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            borderRadius: 14,
+            boxShadow: "var(--shadow)",
+            padding: 14,
+          }}
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Sparkles size={14} color="var(--accent)" className="shrink-0" />
+              <span
+                className="truncate"
+                style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text)" }}
+              >
+                {ar ? exp.title.ar : exp.title.en}
+              </span>
+            </div>
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              className="tap shrink-0 flex items-center justify-center"
+              style={{ width: 22, height: 22, borderRadius: 6, color: "var(--text-soft)" }}
+            >
+              <X size={14} />
+            </button>
+          </div>
+
+          <p
+            style={{
+              fontSize: 12.5,
+              color: "var(--text)",
+              lineHeight: 1.6,
+              marginTop: 8,
+            }}
+          >
+            {ar ? exp.plain.ar : exp.plain.en}
+          </p>
+
+          <StandardRow exp={exp} ar={ar} standardLabel={L.askClauseStandard} />
+
+          <div style={{ marginTop: 10 }}>
+            <div
+              style={{
+                fontSize: 10.5,
+                fontWeight: 700,
+                color: "var(--text-soft)",
+                textTransform: "uppercase",
+                letterSpacing: 0.4,
+              }}
+            >
+              {L.askClauseWhy}
+            </div>
+            <p style={{ fontSize: 12, color: "var(--text-soft)", lineHeight: 1.55, marginTop: 3 }}>
+              {ar ? exp.why.ar : exp.why.en}
+            </p>
+          </div>
+
+          {exp.matchedFact && (
+            <div
+              className="flex items-center gap-1.5"
+              style={{
+                marginTop: 10,
+                paddingTop: 9,
+                borderTop: "1px solid var(--border)",
+                fontSize: 11,
+                color: "var(--text-soft)",
+              }}
+            >
+              <span
+                className="shrink-0"
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: 999,
+                  background: CONF_META[exp.matchedFact.conf].dot,
+                }}
+              />
+              {L.askClauseLinked} · {confidenceWord(exp.matchedFact.conf, lang)}
+            </div>
+          )}
+        </div>
+      )}
+    </div>,
+    document.body,
+  );
+}
+
+function StandardRow({
+  exp,
+  ar,
+  standardLabel,
+}: {
+  exp: ClauseExplanation;
+  ar: boolean;
+  standardLabel: string;
+}) {
+  const meta = VERDICT_META[exp.standard.verdict];
+  const Icon = meta.icon;
+  return (
+    <div
+      className="flex items-start gap-2"
+      style={{
+        marginTop: 10,
+        background: `color-mix(in srgb, ${meta.color} 9%, transparent)`,
+        borderRadius: 10,
+        padding: "8px 10px",
+      }}
+    >
+      <Icon size={15} color={meta.color} className="shrink-0" style={{ marginTop: 1 }} />
+      <div className="min-w-0">
+        <div style={{ fontSize: 10.5, fontWeight: 700, color: meta.color, textTransform: "uppercase", letterSpacing: 0.4 }}>
+          {standardLabel}
+        </div>
+        <p style={{ fontSize: 12, color: "var(--text)", lineHeight: 1.5, marginTop: 2 }}>
+          {ar ? exp.standard.ar : exp.standard.en}
+        </p>
       </div>
     </div>
   );

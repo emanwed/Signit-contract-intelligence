@@ -3,6 +3,7 @@
 import {
   Bell,
   ClipboardCheck,
+  GitCompareArrows,
   Layers,
   ShieldCheck,
   type LucideIcon,
@@ -15,6 +16,7 @@ import type { TabKey } from "@/lib/types";
 const SUBNAV: [TabKey, LucideIcon, keyof Dict][] = [
   ["overview", Layers, "overview"],
   ["notifications", ClipboardCheck, "notifications"],
+  ["radar", GitCompareArrows, "radarTab"],
 ];
 
 // Configuration views — visually separated under a small "Settings" label.
@@ -33,10 +35,12 @@ export function SecondaryPanel({
   tab,
   onTab,
   actionCount,
+  radarCount,
 }: {
   tab: TabKey;
   onTab: (t: TabKey) => void;
   actionCount: number;
+  radarCount: number;
 }) {
   const { L } = useApp();
 
@@ -52,12 +56,14 @@ export function SecondaryPanel({
       </div>
 
       <nav className="flex flex-col gap-1 mt-1" aria-label="Contract Intelligence">
-        {SUBNAV.map(([k, Ic, labelKey]) => renderRow(k, Ic, labelKey, tab, onTab, L, actionCount))}
+        {SUBNAV.map(([k, Ic, labelKey]) =>
+          renderRow(k, Ic, labelKey, tab, onTab, L, actionCount, radarCount),
+        )}
       </nav>
 
       <nav className="flex flex-col gap-1 mt-1" aria-label="Settings">
         {SETTINGS_NAV.map(([k, Ic, labelKey]) =>
-          renderRow(k, Ic, labelKey, tab, onTab, L, actionCount),
+          renderRow(k, Ic, labelKey, tab, onTab, L, actionCount, radarCount),
         )}
       </nav>
     </div>
@@ -72,9 +78,10 @@ function renderRow(
   onTab: (t: TabKey) => void,
   L: Dict,
   actionCount: number,
+  radarCount: number,
 ) {
   const on = tab === k;
-  const badge = k === "notifications" ? actionCount : 0;
+  const badge = k === "notifications" ? actionCount : k === "radar" ? radarCount : 0;
   return (
     <button
       key={k}
