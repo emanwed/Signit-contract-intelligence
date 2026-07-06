@@ -5,7 +5,7 @@ import { useApp } from "@/context/AppContext";
 
 /** Full-screen gate shown when a Pro-only feature is opened on Free. */
 export function ProGate({ title, body }: { title?: string; body?: string }) {
-  const { L, setPlan } = useApp();
+  const { L, setUpgradeOpen } = useApp();
   return (
     <div
       className="flex flex-col items-center justify-center text-center mx-auto"
@@ -59,7 +59,7 @@ export function ProGate({ title, body }: { title?: string; body?: string }) {
         {body ?? L.proGateBody}
       </p>
       <button
-        onClick={() => setPlan("paid")}
+        onClick={() => setUpgradeOpen(true)}
         className="tap mt-2"
         style={{
           background: "var(--cta)",
