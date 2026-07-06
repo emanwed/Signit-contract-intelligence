@@ -511,8 +511,7 @@ export const T: Record<Lang, Dict> = {
     proOnly: "ميزة احترافية",
     proLockPersona: "العدسات الأخرى متاحة في الخطة الاحترافية",
     upgradePro: "الترقية للاحترافية",
-    freeBanner:
-      "أنت على الخطة المجانية — استخدام محدود. رقِّ لفتح كل الميزات.",
+    freeBanner: "أنت على الخطة المجانية",
     freeContractsOf: "تعرض {n} من {m} عقود",
     freeMoreLocked: "{n} عقود إضافية متاحة في الخطة الاحترافية",
     proGateTitle: "ميزة احترافية",
@@ -890,8 +889,7 @@ export const T: Record<Lang, Dict> = {
     proOnly: "Pro feature",
     proLockPersona: "Other lenses are available on Pro",
     upgradePro: "Upgrade to Pro",
-    freeBanner:
-      "You're on the Free plan — limited usage. Upgrade to unlock everything.",
+    freeBanner: "You're on the Free plan",
     freeContractsOf: "Showing {n} of {m} contracts",
     freeMoreLocked: "{n} more contracts available on Pro",
     proGateTitle: "Pro feature",

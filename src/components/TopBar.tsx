@@ -118,8 +118,8 @@ export function TopBar({
           >
             <Sparkles size={14} color="var(--accent)" className="shrink-0" />
             <span
-              className="truncate lg:inline hidden"
-              style={{ fontSize: 12, color: "var(--text)", maxWidth: 220 }}
+              className="whitespace-nowrap lg:inline hidden"
+              style={{ fontSize: 12, color: "var(--text)" }}
             >
               {L.freeBanner}
             </span>
