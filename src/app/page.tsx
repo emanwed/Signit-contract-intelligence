@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { useContracts } from "@/context/ContractsContext";
 import { useNotifications } from "@/context/NotificationsContext";
+import { useSettings } from "@/context/SettingsContext";
 import { alertTier, generateObligations, type AlertTier } from "@/lib/obligations";
 import type {
   Contract,
@@ -29,11 +30,11 @@ import { AskFab } from "@/components/AskFab";
 import { Drawer } from "@/components/Drawer";
 import { AlertDetail } from "@/components/AlertDetail";
 import { AddContractModal } from "@/components/AddContractModal";
-import { FreeBanner, ProGate } from "@/components/PlanGate";
+import { ProGate } from "@/components/PlanGate";
 import { PlanCompareModal } from "@/components/PlanCompare";
 import { MakeRoomModal } from "@/components/MakeRoomModal";
 import { contractStatus } from "@/lib/status";
-import { FREE_UPLOAD_LIMIT } from "@/lib/plan";
+import { FREE_UPLOAD_LIMIT, isFreeWorkspaceContract } from "@/lib/plan";
 import type { Alert } from "@/lib/alerts";
 import type { Dict } from "@/lib/i18n";
 
@@ -58,9 +59,10 @@ const TAB_LABEL: Record<TabKey, keyof Dict> = {
 };
 
 export default function Page() {
-  const { lang, L, plan, upgradeOpen, setUpgradeOpen } = useApp();
-  const { contracts } = useContracts();
-  const { getState } = useNotifications();
+  const { lang, L, plan, setPlan, upgradeOpen, setUpgradeOpen } = useApp();
+  const { contracts, resetContracts } = useContracts();
+  const { getState, resetNotifications } = useNotifications();
+  const { resetSettings } = useSettings();
   const free = plan === "free";
 
   const [section, setSection] = useState<Section>("contracts");
@@ -74,11 +76,19 @@ export default function Page() {
   const [collapsed, setCollapsed] = useState(false);
   const [drawerNavOpen, setDrawerNavOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  // Bumped on demo-reset to remount the content subtree, clearing any child-
+  // local UI state (search boxes, category/team filters, viewer popups).
+  const [resetKey, setResetKey] = useState(0);
+  const [resetToast, setResetToast] = useState(false);
 
-  // Free tier is capped at 3 active contracts. Active contracts drive the cap,
-  // and hitting "add" while at the cap prompts the user to delete one first.
+  // Free tier is capped at 3 active contracts — its starter seed contracts
+  // (until deleted) plus the user's own uploads, same scope as the contract
+  // list. Hitting "add" while at the cap prompts the user to delete one first.
   const activeContracts = useMemo(
-    () => contracts.filter((c) => contractStatus(c) === "active"),
+    () =>
+      contracts.filter(
+        (c) => contractStatus(c) === "active" && isFreeWorkspaceContract(c),
+      ),
     [contracts],
   );
   const freeAtLimit = free && activeContracts.length >= FREE_UPLOAD_LIMIT;
@@ -137,6 +147,40 @@ export default function Page() {
   };
   const notBuilt = (label: string) => setNotice(label);
 
+  /**
+   * Restore the whole prototype to its seed state so every walkthrough starts
+   * clean: seed contracts, cleared action state, default checks/docs/prefs,
+   * Free plan + Executive lens, and a fresh navigation position. Keeps the
+   * reviewer's language & theme (their viewing preference). The `resetKey` bump
+   * remounts the content subtree, clearing child-local filters/search inputs.
+   */
+  const resetDemo = () => {
+    resetContracts();
+    resetNotifications();
+    resetSettings();
+    setPlan("free");
+    setUpgradeOpen(false);
+    setPersona("exec");
+    setSection("contracts");
+    setTab("overview");
+    setFilter(null);
+    setActive(null);
+    setActiveAlert(null);
+    setAddOpen(false);
+    setMakeRoomOpen(false);
+    setDrawerNavOpen(false);
+    setCollapsed(false);
+    setNotice(null);
+    setResetKey((k) => k + 1);
+    setResetToast(true);
+  };
+
+  useEffect(() => {
+    if (!resetToast) return;
+    const id = setTimeout(() => setResetToast(false), 2600);
+    return () => clearTimeout(id);
+  }, [resetToast]);
+
   // Each breadcrumb navigates to its page: brand → Home, section → its section,
   // tab → its tab.
   const goRoot = () => onSection("home");
@@ -172,8 +216,6 @@ export default function Page() {
   const primaryProps = {
     section,
     onSection,
-    // "New document" runs the same flow as "New contract" (add a signed contract).
-    onNewDocument: startAdd,
     onNotBuilt: notBuilt,
   };
   const secondaryProps = {
@@ -185,7 +227,7 @@ export default function Page() {
   return (
     <div className="min-h-screen">
       {/* Prototype-testing strip (outside the product design) */}
-      <PrototypeBar persona={effPersona} onPersona={onPersona} />
+      <PrototypeBar persona={effPersona} onPersona={onPersona} onReset={resetDemo} />
 
       <div className="flex">
         {/* Layer 1 — primary rail */}
@@ -219,8 +261,9 @@ export default function Page() {
           </aside>
         )}
 
-        {/* Main column */}
-        <div className="flex-1 min-w-0 flex flex-col">
+        {/* Main column — keyed so a demo-reset remounts it, clearing any
+            child-local UI (search boxes, filters, viewer popups). */}
+        <div key={`main-${resetKey}`} className="flex-1 min-w-0 flex flex-col">
           <TopBar
             crumbs={crumbs}
             onMenu={() => setDrawerNavOpen(true)}
@@ -240,9 +283,6 @@ export default function Page() {
           />
           {isContracts ? (
             <>
-              {free &&
-                tab !== "settings" &&
-                tab !== "search" && <FreeBanner />}
               {tab === "overview" && (
                 <Overview
                   persona={effPersona}
@@ -287,8 +327,9 @@ export default function Page() {
         </footer>
       </div>
 
-      {/* Floating Ask (contract intelligence only) */}
-      {isContracts && <AskFab onOpenContract={setActive} tab={tab} />}
+      {/* Floating Ask (contract intelligence only) — keyed so a demo-reset
+          clears its open state and conversation thread. */}
+      {isContracts && <AskFab key={`ask-${resetKey}`} onOpenContract={setActive} tab={tab} />}
 
       {active && <Drawer c={active} onClose={() => setActive(null)} />}
 
@@ -389,6 +430,27 @@ export default function Page() {
           role="status"
         >
           {notice} — {L.notBuiltTitle}
+        </div>
+      )}
+
+      {/* Demo-reset confirmation */}
+      {resetToast && (
+        <div
+          className="rise fixed z-[80] left-1/2 -translate-x-1/2 flex items-center gap-2"
+          style={{
+            bottom: 24,
+            maxWidth: "calc(100vw - 32px)",
+            background: "var(--high)",
+            color: "#fff",
+            borderRadius: 12,
+            padding: "10px 16px",
+            fontSize: 13,
+            fontWeight: 600,
+            boxShadow: "var(--shadow)",
+          }}
+          role="status"
+        >
+          <Check size={16} /> {L.resetDemoDone}
         </div>
       )}
       </div>

@@ -2,7 +2,6 @@
 
 import {
   CircleHelp,
-  CirclePlus,
   Crown,
   FileSearch,
   FolderClosed,
@@ -35,14 +34,12 @@ export function PrimaryNav({
   section,
   onSection,
   collapsed,
-  onNewDocument,
   onNotBuilt,
   flat = false,
 }: {
   section: Section;
   onSection: (s: Section) => void;
   collapsed: boolean;
-  onNewDocument: () => void;
   onNotBuilt: (label: string) => void;
   /** Drawer mode — natural height, no bottom-pinning spacer. */
   flat?: boolean;
@@ -58,25 +55,6 @@ export function PrimaryNav({
       >
         <Wordmark size={collapsed ? 15 : 23} />
       </div>
-
-      {/* Yellow "New document" CTA (Signit signing flow — placeholder) */}
-      <button
-        onClick={onNewDocument}
-        title={L.newDocument}
-        className={`tap flex items-center gap-1.5 ${collapsed ? "justify-center" : "justify-start"}`}
-        style={{
-          background: "var(--cta)",
-          color: "var(--cta-ink)",
-          border: "none",
-          borderRadius: 10,
-          padding: collapsed ? "9px 0" : "10px 14px",
-          fontSize: 13,
-          fontWeight: 700,
-        }}
-      >
-        <CirclePlus size={17} className="shrink-0" />
-        {!collapsed && <span className="truncate">{L.newDocument}</span>}
-      </button>
 
       {/* Main nav */}
       <nav className="flex flex-col gap-1 mt-1" aria-label="Main">

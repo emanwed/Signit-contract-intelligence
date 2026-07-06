@@ -9,7 +9,10 @@ type Val = boolean | string;
 type FeatRow = { feat: keyof Dict; free: Val; pro: Val };
 type Row = { section: keyof Dict } | FeatRow;
 
-// Practical, feature-sliced comparison — same feature, different slice per tier.
+// Practical, feature-sliced comparison — same feature, different slice per
+// tier. Every row here maps to an actual gate in the code (see src/lib/plan.ts,
+// compliance.ts's PRO_CHECKS, and the isPro/free checks across components) —
+// keep it that way when features change instead of describing a roadmap.
 const ROWS: Row[] = [
   { section: "secIngest" },
   { feat: "cmpUploads", free: "valUploadsFree", pro: "valUploadsPro" },
@@ -20,21 +23,17 @@ const ROWS: Row[] = [
   { feat: "cmpPdpl", free: "valPdplFree", pro: "valPdplPro" },
   { feat: "cmpZatca", free: false, pro: true },
   { feat: "cmpAnomaly", free: false, pro: true },
+  { feat: "cmpCompanyDocs", free: false, pro: true },
 
   { section: "secObligations" },
   { feat: "cmpRenewals", free: "valRenewFree", pro: "valRenewPro" },
+  { feat: "cmpActionWindow", free: "valActionWindowFree", pro: "valActionWindowPro" },
+  { feat: "cmpWorkflow", free: false, pro: true },
   { feat: "cmpLenses", free: "valExecOnly", pro: "valAllLenses" },
 
   { section: "secIntel" },
   { feat: "cmpAsk", free: "valAskSingle", pro: "valAskPortfolio" },
   { feat: "cmpDashboard", free: false, pro: true },
-  { feat: "cmpClauseCompare", free: false, pro: true },
-  { feat: "cmpWorkflow", free: false, pro: true },
-  { feat: "cmpIntegrations", free: false, pro: true },
-
-  { section: "secEnterprise" },
-  { feat: "cmpAgent", free: false, pro: "valEnterprise" },
-  { feat: "cmpMultiEntity", free: false, pro: "valEnterprise" },
 ];
 
 /** Free-vs-Pro feature comparison, with Upgrade / Keep-free CTAs. */

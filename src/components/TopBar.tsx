@@ -10,6 +10,7 @@ import {
   Menu,
   Moon,
   PanelLeft,
+  Sparkles,
   Sun,
   User,
 } from "lucide-react";
@@ -38,6 +39,9 @@ export function TopBar({
   onNotBuilt: (label: string) => void;
   onOpenAlert: (a: Alert) => void;
 }) {
+  const { L, plan, setUpgradeOpen } = useApp();
+  const free = plan === "free";
+
   return (
     <header
       className="sticky z-40"
@@ -98,6 +102,42 @@ export function TopBar({
         </nav>
 
         <div className="flex-1" />
+
+        {free && (
+          <button
+            onClick={() => setUpgradeOpen(true)}
+            className="tap hidden md:flex items-center gap-2 shrink-0"
+            style={{
+              background: "linear-gradient(90deg, var(--accent-soft), #fff5d6)",
+              border: "1px solid var(--border)",
+              borderRadius: 999,
+              paddingInlineStart: 12,
+              paddingInlineEnd: 4,
+              paddingBlock: 4,
+            }}
+          >
+            <Sparkles size={14} color="var(--accent)" className="shrink-0" />
+            <span
+              className="truncate lg:inline hidden"
+              style={{ fontSize: 12, color: "var(--text)", maxWidth: 220 }}
+            >
+              {L.freeBanner}
+            </span>
+            <span
+              className="shrink-0 whitespace-nowrap"
+              style={{
+                background: "var(--cta)",
+                color: "var(--cta-ink)",
+                borderRadius: 999,
+                padding: "5px 11px",
+                fontSize: 12,
+                fontWeight: 700,
+              }}
+            >
+              {L.upgradePro}
+            </span>
+          </button>
+        )}
 
         <Notifications onOpenAlert={onOpenAlert} />
         <AccountMenu onNotBuilt={onNotBuilt} />

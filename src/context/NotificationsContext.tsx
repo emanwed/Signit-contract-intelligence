@@ -89,6 +89,8 @@ interface NotificationsContextValue {
   addTag: (id: string, tag: string) => void;
   removeTag: (id: string, tag: string) => void;
   addComment: (id: string, text: string) => void;
+  /** Clear all action state — read/done/outcomes/comments/activity (demo reset). */
+  resetNotifications: () => void;
 }
 
 const NotificationsContext = createContext<NotificationsContextValue | null>(null);
@@ -202,6 +204,8 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     [patch],
   );
 
+  const resetNotifications = useCallback(() => setStates({}), []);
+
   const getState = useCallback((id: string) => states[id] ?? EMPTY, [states]);
   const unreadCount = useCallback(
     (ids: string[]) => ids.filter((id) => !(states[id] ?? EMPTY).read).length,
@@ -221,6 +225,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       addTag,
       removeTag,
       addComment,
+      resetNotifications,
     }),
     [
       getState,
@@ -233,6 +238,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       addTag,
       removeTag,
       addComment,
+      resetNotifications,
     ],
   );
 

@@ -13,12 +13,12 @@ import {
   Umbrella,
   UserRound,
   BellRing,
-  X,
   type LucideIcon,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { useContracts } from "@/context/ContractsContext";
 import { ASSIGNEES, useNotifications } from "@/context/NotificationsContext";
+import { FilterResetButton, FilterSelect, FilterToggleChip } from "./Filters";
 import {
   RESPONSE_TONE_VAR,
   findResponse,
@@ -232,48 +232,22 @@ export function ObligationsCalendar({
       {/* Category filter — tap a chip to filter the list by that category */}
       <div className="flex items-center gap-2 flex-wrap mb-4">
         {(Object.keys(CAT_ICON) as ObligationCat[]).map((cat) => {
-          const Icon = CAT_ICON[cat];
-          const on = catFilter === cat;
           const tone = CAT_TONE[cat];
+          const on = catFilter === cat;
           return (
-            <button
+            <FilterToggleChip
               key={cat}
+              on={on}
               onClick={() => setCatFilter(on ? null : cat)}
-              aria-pressed={on}
-              className="tap inline-flex items-center gap-1.5"
-              style={{
-                fontSize: 12,
-                fontWeight: on ? 700 : 600,
-                color: on ? tone : "var(--text)",
-                background: on
-                  ? `color-mix(in srgb, ${tone} 15%, transparent)`
-                  : "var(--surface)",
-                border: `1px solid ${on ? tone : "var(--border)"}`,
-                borderRadius: 999,
-                padding: "4px 10px",
-                cursor: "pointer",
-              }}
-            >
-              <Icon size={13} color={tone} />
-              {L[CAT_LABEL[cat]]}
-            </button>
+              icon={CAT_ICON[cat]}
+              iconColor={tone}
+              tone={tone}
+              label={L[CAT_LABEL[cat]]}
+            />
           );
         })}
         {catFilter && (
-          <button
-            onClick={() => setCatFilter(null)}
-            className="tap inline-flex items-center gap-1"
-            style={{
-              fontSize: 11.5,
-              fontWeight: 600,
-              color: "var(--text-soft)",
-              background: "transparent",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            <X size={12} /> {L.reset}
-          </button>
+          <FilterResetButton onClick={() => setCatFilter(null)} label={L.reset} />
         )}
       </div>
 
@@ -283,40 +257,14 @@ export function ObligationsCalendar({
           <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-soft)" }}>
             {lang === "ar" ? "الفريق المسؤول" : "Responsible team"}
           </span>
-          <div
-            className="relative inline-flex items-center gap-1"
-            style={{
-              border: `1px solid ${teamFilter ? "var(--accent)" : "var(--border)"}`,
-              background: teamFilter ? "var(--accent-soft)" : "var(--surface)",
-              borderRadius: 999,
-              paddingInline: 10,
-              height: 32,
-            }}
-          >
-            <UserRound size={13} color={teamFilter ? "var(--accent)" : "var(--text-soft)"} />
-            <select
-              value={teamFilter ?? ""}
-              onChange={(e) => setTeamFilter(e.target.value || null)}
-              className="appearance-none bg-transparent"
-              style={{
-                border: "none",
-                outline: "none",
-                fontSize: 12.5,
-                fontWeight: 600,
-                color: teamFilter ? "var(--accent)" : "var(--text)",
-                fontFamily: "inherit",
-                cursor: "pointer",
-                paddingInlineEnd: 4,
-              }}
-            >
-              <option value="">{lang === "ar" ? "كل الفرق" : "All teams"}</option>
-              {ASSIGNEES.map((a) => (
-                <option key={a} value={a}>
-                  {nameLabel(a, lang)}
-                </option>
-              ))}
-            </select>
-          </div>
+          <FilterSelect
+            active={!!teamFilter}
+            value={teamFilter ?? ""}
+            onChange={(v) => setTeamFilter(v || null)}
+            placeholder={lang === "ar" ? "كل الفرق" : "All teams"}
+            options={ASSIGNEES.map((a) => ({ value: a, label: nameLabel(a, lang) }))}
+            icon={UserRound}
+          />
         </div>
       )}
 

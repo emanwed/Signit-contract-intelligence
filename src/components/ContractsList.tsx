@@ -3,14 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowUpDown,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
   Plus,
   RefreshCw,
-  RotateCcw,
   Search,
   Sparkles,
   Upload,
@@ -19,10 +17,12 @@ import {
 import { useApp } from "@/context/AppContext";
 import { useContracts } from "@/context/ContractsContext";
 import { useSettings } from "@/context/SettingsContext";
+import { FilterResetButton, FilterSelect, FilterToggleChip } from "./Filters";
 import { fmtGreg, hasLowLiabilityCap, money, riskVar } from "@/lib/format";
 import { francoMatch } from "@/lib/franco";
 import { documentText } from "@/lib/contractText";
 import { hasPlaybookDeviation } from "@/lib/playbook";
+import { isFreeWorkspaceContract } from "@/lib/plan";
 import {
   contractStart,
   contractStatus,
@@ -109,11 +109,13 @@ export function ContractsList({
   const { contracts: allContracts } = useContracts();
   const { checks } = useSettings();
 
-  // Free plan surfaces only 3 active contracts; upgrading unlocks the full set.
+  // Free plan surfaces only its starter seed contracts + own uploads; deleting
+  // one shrinks this list for good instead of backfilling from the full demo
+  // portfolio. Upgrading unlocks the full set.
   const free = plan === "free";
   const contracts = useMemo(() => {
     if (!free) return allContracts;
-    return allContracts.filter((c) => contractStatus(c) === "active").slice(0, 3);
+    return allContracts.filter(isFreeWorkspaceContract);
   }, [free, allContracts]);
 
   const [q, setQ] = useState("");
@@ -282,52 +284,37 @@ export function ContractsList({
           />
         </div>
 
-        <FilterPill
+        <FilterSelect
           active={statusF !== "all"}
-          value={statusF}
-          onChange={(v) => setStatusF(v as "all" | ContractStatusKey)}
+          value={statusF === "all" ? "" : statusF}
+          onChange={(v) => setStatusF((v || "all") as "all" | ContractStatusKey)}
           placeholder={L.fltStatus}
           options={STATUS_ORDER.map((s) => ({ value: s, label: L[STATUS_KEY[s]] }))}
+          icon={Plus}
         />
-        <FilterPill
+        <FilterSelect
           active={typeF !== "all"}
-          value={typeF}
-          onChange={(v) => setTypeF(v as "all" | ContractType)}
+          value={typeF === "all" ? "" : typeF}
+          onChange={(v) => setTypeF((v || "all") as "all" | ContractType)}
           placeholder={L.fltType}
           options={TYPES.map((t) => ({ value: t, label: L.types[t] }))}
+          icon={Plus}
         />
-        <PillToggle
+        <FilterToggleChip
           on={autoOnly}
           onClick={() => setAutoOnly((v) => !v)}
-          Icon={RefreshCw}
+          icon={RefreshCw}
           label={L.colAutoRenew}
         />
         {hasUploads && (
-          <PillToggle
+          <FilterToggleChip
             on={filter === "uploaded"}
             onClick={() => setFilter(filter === "uploaded" ? null : "uploaded")}
-            Icon={Upload}
+            icon={Upload}
             label={L.filterUploaded}
           />
         )}
-        {anyActive && (
-          <button
-            onClick={resetAll}
-            title={L.reset}
-            className="tap flex items-center gap-1.5 shrink-0"
-            style={{
-              color: "var(--text-soft)",
-              background: "var(--surface)",
-              border: "1px solid var(--border)",
-              borderRadius: 999,
-              fontSize: 12.5,
-              fontWeight: 600,
-              padding: "6px 12px",
-            }}
-          >
-            <RotateCcw size={13} className="rtl-flip" /> {L.reset}
-          </button>
-        )}
+        {anyActive && <FilterResetButton onClick={resetAll} label={L.reset} />}
       </div>
 
       {/* Active drill-down + result count */}
@@ -646,97 +633,6 @@ export function ContractsList({
         </div>
       )}
     </div>
-  );
-}
-
-/** Pill-styled dropdown filter: a leading + icon, the select, a trailing caret. */
-function FilterPill({
-  value,
-  onChange,
-  options,
-  placeholder,
-  active,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  options: { value: string; label: string }[];
-  placeholder: string;
-  active: boolean;
-}) {
-  return (
-    <div
-      className="relative flex items-center gap-1 shrink-0"
-      style={{
-        border: `1px solid ${active ? "var(--accent)" : "var(--border)"}`,
-        background: active ? "var(--accent-soft)" : "var(--surface)",
-        borderRadius: 999,
-        paddingInline: 10,
-        height: 34,
-      }}
-    >
-      <Plus size={13} color={active ? "var(--accent)" : "var(--text-soft)"} />
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="appearance-none bg-transparent"
-        style={{
-          border: "none",
-          outline: "none",
-          fontSize: 12.5,
-          fontWeight: 600,
-          color: active ? "var(--accent)" : "var(--text)",
-          fontFamily: "inherit",
-          cursor: "pointer",
-          paddingInlineEnd: 16,
-        }}
-      >
-        <option value="all">{placeholder}</option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-      <ChevronDown
-        size={13}
-        color="var(--text-soft)"
-        className="pointer-events-none"
-        style={{ position: "absolute", insetInlineEnd: 8 }}
-      />
-    </div>
-  );
-}
-
-/** Pill toggle button (auto-renew / uploaded quick filters). */
-function PillToggle({
-  on,
-  onClick,
-  Icon,
-  label,
-}: {
-  on: boolean;
-  onClick: () => void;
-  Icon: typeof RefreshCw;
-  label: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      aria-pressed={on}
-      className="tap flex items-center gap-1.5 shrink-0"
-      style={{
-        border: `1px solid ${on ? "var(--accent)" : "var(--border)"}`,
-        background: on ? "var(--accent-soft)" : "var(--surface)",
-        color: on ? "var(--accent)" : "var(--text)",
-        borderRadius: 999,
-        paddingInline: 12,
-        height: 34,
-        fontSize: 12.5,
-        fontWeight: 600,
-      }}
-    >
-      <Icon size={13} /> {label}
-    </button>
   );
 }
 

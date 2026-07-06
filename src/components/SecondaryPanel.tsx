@@ -5,7 +5,6 @@ import {
   ClipboardCheck,
   Layers,
   ShieldCheck,
-  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
@@ -24,9 +23,6 @@ const SETTINGS_NAV: [TabKey, LucideIcon, keyof Dict][] = [
   ["notifsettings", Bell, "notifSettingsTab"],
 ];
 
-// Pro-only sub-views — get a lock badge on the Free plan.
-const PRO_TABS = new Set<TabKey>([]);
-
 /**
  * Second-layer navigation — the contextual panel for "Contract Intelligence",
  * mirroring how Signit shows a section's sub-views beside the main rail. Holds
@@ -42,8 +38,7 @@ export function SecondaryPanel({
   onTab: (t: TabKey) => void;
   actionCount: number;
 }) {
-  const { L, plan } = useApp();
-  const free = plan === "free";
+  const { L } = useApp();
 
   return (
     <div className="flex flex-col min-h-full shrink-0 p-3 gap-3">
@@ -57,30 +52,12 @@ export function SecondaryPanel({
       </div>
 
       <nav className="flex flex-col gap-1 mt-1" aria-label="Contract Intelligence">
-        {SUBNAV.map(([k, Ic, labelKey]) =>
-          renderRow(k, Ic, labelKey, tab, onTab, free, L, actionCount),
-        )}
+        {SUBNAV.map(([k, Ic, labelKey]) => renderRow(k, Ic, labelKey, tab, onTab, L, actionCount))}
       </nav>
 
-      {/* Separator + small group label, then the configuration views */}
-      <div className="px-1">
-        <div style={{ height: 1, background: "var(--border)" }} />
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            color: "var(--text-soft)",
-            letterSpacing: 0.3,
-            marginTop: 10,
-          }}
-        >
-          {L.settings}
-        </div>
-      </div>
-
-      <nav className="flex flex-col gap-1" aria-label="Settings">
+      <nav className="flex flex-col gap-1 mt-1" aria-label="Settings">
         {SETTINGS_NAV.map(([k, Ic, labelKey]) =>
-          renderRow(k, Ic, labelKey, tab, onTab, free, L, actionCount),
+          renderRow(k, Ic, labelKey, tab, onTab, L, actionCount),
         )}
       </nav>
     </div>
@@ -93,7 +70,6 @@ function renderRow(
   labelKey: keyof Dict,
   tab: TabKey,
   onTab: (t: TabKey) => void,
-  free: boolean,
   L: Dict,
   actionCount: number,
 ) {
@@ -115,9 +91,6 @@ function renderRow(
     >
       <Ic size={18} color={on ? "var(--accent)" : "var(--text-soft)"} className="shrink-0" />
       <span className="flex-1 truncate">{L[labelKey] as string}</span>
-      {free && PRO_TABS.has(k) && (
-        <Sparkles size={13} color="var(--accent)" className="shrink-0" />
-      )}
       {badge > 0 && (
         <span
           style={{

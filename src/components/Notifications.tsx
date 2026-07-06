@@ -19,6 +19,7 @@ import {
   type AlertKind,
   type AlertSeverity,
 } from "@/lib/alerts";
+import { effectiveChecks } from "@/lib/compliance";
 
 const KIND_ICON: Record<AlertKind, LucideIcon> = {
   renewal: CalendarClock,
@@ -43,7 +44,8 @@ export function Notifications({
 }: {
   onOpenAlert: (a: Alert) => void;
 }) {
-  const { L, lang } = useApp();
+  const { L, lang, plan } = useApp();
+  const free = plan === "free";
   const { contracts } = useContracts();
   const { checks, alertPrefs } = useSettings();
   const { getState, unreadCount, markAllRead } = useNotifications();
@@ -51,10 +53,12 @@ export function Notifications({
   const [unreadOnly, setUnreadOnly] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const alerts = useMemo(
-    () => buildAlerts(contracts, checks, alertPrefs, lang),
-    [contracts, checks, alertPrefs, lang],
-  );
+  const alerts = useMemo(() => {
+    const all = buildAlerts(contracts, effectiveChecks(checks, plan), alertPrefs, lang);
+    // Clause-anomaly detection is a Pro capability — Free keeps renewal,
+    // compliance-deviation and low-confidence-review alerts only.
+    return free ? all.filter((a) => a.kind !== "anomaly") : all;
+  }, [contracts, checks, plan, free, alertPrefs, lang]);
   const alertIds = useMemo(() => alerts.map((a) => a.id), [alerts]);
   const unread = unreadCount(alertIds);
   const shown = unreadOnly ? alerts.filter((a) => !getState(a.id).read) : alerts;

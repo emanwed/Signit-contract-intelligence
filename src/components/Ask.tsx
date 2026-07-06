@@ -1,12 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { Search, Sparkles } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  Check,
+  Copy,
+  FileText,
+  RotateCcw,
+  Search,
+  Sparkles,
+} from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { useContracts } from "@/context/ContractsContext";
 import { buildPortfolio, localFallback } from "@/lib/format";
 import type { AskAnswer, Contract, Lang, TabKey } from "@/lib/types";
-import { ContractCard } from "./ContractCard";
 
 /** Page-aware suggested questions — tailored to the tab the user is on. */
 function suggestionsFor(tab: TabKey | undefined, lang: Lang): string[] {
@@ -58,11 +64,21 @@ function suggestionsFor(tab: TabKey | undefined, lang: Lang): string[] {
   return (tab && table[tab]) || (lang === "ar" ? fallbackAr : fallbackEn);
 }
 
+/** One question–answer exchange in the conversation. */
+interface Exchange {
+  id: string;
+  q: string;
+  res?: AskAnswer;
+  /** Whether the live model (vs the local demo matcher) served this answer. */
+  live?: boolean;
+}
+
 /**
- * "Ask Signit" — natural-language Q&A over the portfolio. Calls the real
- * server route (/api/ask → Anthropic API). If that path fails for any reason,
- * it silently falls back to the local keyword matcher so the demo never breaks;
- * a badge shows which path served the answer (Live AI vs demo).
+ * "Ask Signit" — natural-language Q&A over the portfolio, as a multi-turn
+ * conversation. Each answer keeps its own Live-AI/demo badge, a copy action,
+ * and tappable source-contract chips. Calls the real server route
+ * (/api/ask → Anthropic API); if that fails, the local keyword matcher answers
+ * so the demo never breaks.
  */
 export function Ask({
   onOpen,
@@ -71,21 +87,37 @@ export function Ask({
   onOpen: (c: Contract) => void;
   tab?: TabKey;
 }) {
-  const { lang, L } = useApp();
-  const { contracts } = useContracts();
+  const { lang, L, plan, setUpgradeOpen } = useApp();
+  const ar = lang === "ar";
+  const free = plan === "free";
+  const { contracts: allContracts } = useContracts();
+  // Free asks over its own uploaded contracts only; Pro searches the whole
+  // portfolio. Mirrors the same uploaded-only scoping used for Free insights.
+  const contracts = free ? allContracts.filter((c) => c.source === "added") : allContracts;
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
-  const [res, setRes] = useState<AskAnswer | null>(null);
-  const [liveTag, setLiveTag] = useState(false);
+  const [thread, setThread] = useState<Exchange[]>([]);
+  const endRef = useRef<HTMLDivElement>(null);
 
   const suggestions = suggestionsFor(tab, lang);
 
+  // Keep the newest exchange in view as the conversation grows.
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [thread, busy]);
+
+  const noFreeContracts = free && contracts.length === 0;
+
   const run = async (question?: string) => {
     const query = (question ?? q).trim();
-    if (!query) return;
+    if (!query || busy || noFreeContracts) return;
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    setThread((t) => [...t, { id, q: query }]);
+    setQ("");
     setBusy(true);
-    setRes(null);
 
+    let res: AskAnswer;
+    let live = false;
     try {
       const r = await fetch("/api/ask", {
         method: "POST",
@@ -97,24 +129,17 @@ export function Ask({
       });
       const json = await r.json();
       if (json?.ok && json.data) {
-        setLiveTag(true);
-        setRes(json.data as AskAnswer);
+        live = true;
+        res = json.data as AskAnswer;
       } else {
-        // Route reached but the model/network hiccuped — graceful fallback.
-        setLiveTag(false);
-        setRes(localFallback(query, contracts));
+        res = localFallback(query, contracts);
       }
     } catch {
-      setLiveTag(false);
-      setRes(localFallback(query, contracts));
-    } finally {
-      setBusy(false);
+      res = localFallback(query, contracts);
     }
+    setThread((t) => t.map((x) => (x.id === id ? { ...x, res, live } : x)));
+    setBusy(false);
   };
-
-  const matched = res
-    ? contracts.filter((c) => (res.matchIds || []).includes(c.id))
-    : [];
 
   return (
     <div>
@@ -131,26 +156,26 @@ export function Ask({
         <div className="flex items-center gap-2 mb-3">
           <Sparkles size={18} color="var(--accent)" />
           <span style={{ fontWeight: 700, fontSize: 15 }}>{L.ask}</span>
-          <span
-            className="flex items-center gap-1"
-            style={{
-              fontSize: 10.5,
-              color: liveTag ? "var(--high)" : "var(--text-soft)",
-              border: "1px solid var(--border)",
-              borderRadius: 20,
-              padding: "1px 8px",
-            }}
-          >
-            <span
+          <div className="flex-1" />
+          {thread.length > 0 && (
+            <button
+              onClick={() => setThread([])}
+              className="tap flex items-center gap-1"
               style={{
-                width: 6,
-                height: 6,
-                borderRadius: 6,
-                background: liveTag ? "var(--high)" : "var(--med)",
+                fontSize: 11.5,
+                fontWeight: 600,
+                color: "var(--text-soft)",
+                border: "1px solid var(--border)",
+                borderRadius: 20,
+                padding: "3px 10px",
+                background: "transparent",
+                cursor: "pointer",
               }}
-            />
-            {liveTag ? L.live : L.demo}
-          </span>
+            >
+              <RotateCcw size={12} className="rtl-flip" />
+              {ar ? "محادثة جديدة" : "New chat"}
+            </button>
+          )}
         </div>
 
         <div
@@ -166,8 +191,15 @@ export function Ask({
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && run()}
-            placeholder={L.askPlaceholder}
+            placeholder={
+              noFreeContracts
+                ? ar
+                  ? "ارفع عقدًا أولًا لتسأل عنه…"
+                  : "Upload a contract first to ask about it…"
+                : L.askPlaceholder
+            }
             aria-label={L.ask}
+            disabled={noFreeContracts}
             style={{
               flex: 1,
               minWidth: 0,
@@ -180,7 +212,7 @@ export function Ask({
           />
           <button
             onClick={() => run()}
-            disabled={busy}
+            disabled={busy || noFreeContracts}
             className="tap px-4 py-2 shrink-0"
             style={{
               background: "var(--grad-primary)",
@@ -189,80 +221,234 @@ export function Ask({
               fontWeight: 700,
               fontSize: 13,
               border: "none",
-              opacity: busy ? 0.7 : 1,
+              opacity: busy || noFreeContracts ? 0.5 : 1,
             }}
           >
             {L.ask}
           </button>
         </div>
 
-        <div
-          style={{ fontSize: 11, fontWeight: 600, color: "var(--text-soft)", marginTop: 12, marginBottom: 6 }}
-        >
-          {L.askSuggestFor}
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {suggestions.map((s) => (
-            <button
-              key={s}
-              onClick={() => {
-                setQ(s);
-                run(s);
-              }}
-              className="tap px-3 py-1.5 text-start"
+        {free && (
+          <button
+            onClick={() => setUpgradeOpen(true)}
+            className="tap inline-flex items-center gap-1 mt-2.5"
+            style={{
+              fontSize: 11.5,
+              fontWeight: 700,
+              color: "var(--accent)",
+              background: "var(--accent-soft)",
+              borderRadius: 999,
+              padding: "3px 9px",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            <Sparkles size={12} />
+            {ar
+              ? "الخطة المجانية: البحث ضمن عقودك المرفوعة فقط — ترقَّ للبحث في المحفظة كاملة"
+              : "Free plan: searches your uploaded contracts only — upgrade to search the whole portfolio"}
+          </button>
+        )}
+
+        {/* Suggestions — shown until a conversation starts (need a scoped
+            contract to run against) */}
+        {thread.length === 0 && !noFreeContracts && (
+          <>
+            <div
               style={{
-                fontSize: 12,
+                fontSize: 11,
+                fontWeight: 600,
                 color: "var(--text-soft)",
-                border: "1px solid var(--border)",
-                borderRadius: 20,
-                background: "transparent",
+                marginTop: 12,
+                marginBottom: 6,
               }}
             >
-              {s}
-            </button>
-          ))}
+              {L.askSuggestFor}
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {suggestions.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => run(s)}
+                  className="tap px-3 py-1.5 text-start"
+                  style={{
+                    fontSize: 12,
+                    color: "var(--text-soft)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 20,
+                    background: "transparent",
+                  }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Conversation thread */}
+      <div className="flex flex-col gap-3 mt-4">
+        {thread.map((x) => (
+          <ExchangeView key={x.id} x={x} lang={lang} L={L} contracts={contracts} onOpen={onOpen} />
+        ))}
+        {busy && (
+          <div
+            className="flex items-center gap-2"
+            style={{ color: "var(--text-soft)", fontSize: 13 }}
+          >
+            <Sparkles size={15} className="rise" color="var(--accent)" /> {L.thinking}
+          </div>
+        )}
+        <div ref={endRef} />
+      </div>
+    </div>
+  );
+}
+
+/** One Q→A pair: user bubble, then the answer with badge, copy and sources. */
+function ExchangeView({
+  x,
+  lang,
+  L,
+  contracts,
+  onOpen,
+}: {
+  x: Exchange;
+  lang: Lang;
+  L: { live: string; demo: string; matches: string };
+  contracts: Contract[];
+  onOpen: (c: Contract) => void;
+}) {
+  const ar = lang === "ar";
+  const [copied, setCopied] = useState(false);
+
+  const matched = x.res
+    ? contracts.filter((c) => (x.res!.matchIds || []).includes(c.id))
+    : [];
+  const answer = x.res ? (ar ? x.res.answer_ar : x.res.answer_en) : "";
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(answer);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      /* clipboard unavailable — ignore */
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      {/* User question bubble */}
+      <div className="flex justify-end">
+        <div
+          style={{
+            maxWidth: "85%",
+            background: "var(--accent-soft)",
+            color: "var(--text)",
+            borderRadius: "14px 14px 4px 14px",
+            padding: "8px 12px",
+            fontSize: 13,
+            lineHeight: 1.6,
+          }}
+        >
+          {x.q}
         </div>
       </div>
 
-      {busy && (
+      {/* Answer */}
+      {x.res && (
         <div
-          className="flex items-center gap-2 mt-5"
-          style={{ color: "var(--text-soft)", fontSize: 13.5 }}
+          className="rise"
+          style={{
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            borderRadius: "14px 14px 14px 4px",
+            boxShadow: "var(--shadow)",
+            padding: "10px 12px",
+          }}
         >
-          <Sparkles size={16} className="rise" color="var(--accent)" />{" "}
-          {L.thinking}
-        </div>
-      )}
-
-      {res && !busy && (
-        <div className="rise mt-5">
-          <div
-            className="flex items-start gap-2 p-3 mb-4"
-            style={{
-              background: "var(--accent-soft)",
-              borderRadius: 12,
-              fontSize: 13.5,
-            }}
-          >
+          <div className="flex items-start gap-2">
             <Sparkles
-              size={16}
+              size={15}
               color="var(--accent)"
-              style={{ flexShrink: 0, marginTop: 2 }}
+              className="shrink-0"
+              style={{ marginTop: 2 }}
             />
-            <span>{lang === "ar" ? res.answer_ar : res.answer_en}</span>
+            <span style={{ fontSize: 13.5, lineHeight: 1.7, flex: 1 }}>{answer}</span>
           </div>
+
+          {matched.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap mt-2.5">
+              <span style={{ fontSize: 11, color: "var(--text-soft)", fontWeight: 600 }}>
+                {L.matches} · {matched.length}
+              </span>
+              {matched.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => onOpen(c)}
+                  className="tap inline-flex items-center gap-1"
+                  style={{
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                    color: "var(--accent)",
+                    background: "var(--accent-soft)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 999,
+                    padding: "3px 9px",
+                    cursor: "pointer",
+                  }}
+                >
+                  <FileText size={11} />
+                  <span className="truncate" style={{ maxWidth: 180 }}>
+                    {ar ? c.title_ar : c.title_en}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
           <div
-            style={{ fontSize: 12.5, color: "var(--text-soft)", marginBottom: 10 }}
+            className="flex items-center gap-2 mt-2.5 pt-2"
+            style={{ borderTop: "1px solid var(--border)" }}
           >
-            {L.matches} · {matched.length}
-          </div>
-          <div
-            className="grid gap-3"
-            style={{ gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))" }}
-          >
-            {matched.map((c) => (
-              <ContractCard key={c.id} c={c} onOpen={onOpen} highlight />
-            ))}
+            <span
+              className="inline-flex items-center gap-1"
+              style={{
+                fontSize: 10.5,
+                color: x.live ? "var(--high)" : "var(--text-soft)",
+                border: "1px solid var(--border)",
+                borderRadius: 20,
+                padding: "1px 8px",
+              }}
+            >
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: 6,
+                  background: x.live ? "var(--high)" : "var(--med)",
+                }}
+              />
+              {x.live ? L.live : L.demo}
+            </span>
+            <div className="flex-1" />
+            <button
+              onClick={copy}
+              className="tap inline-flex items-center gap-1"
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: copied ? "var(--high)" : "var(--text-soft)",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              {copied ? <Check size={12} /> : <Copy size={12} />}
+              {copied ? (ar ? "نُسخ" : "Copied") : ar ? "نسخ" : "Copy"}
+            </button>
           </div>
         </div>
       )}

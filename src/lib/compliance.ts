@@ -1,4 +1,5 @@
 import type { Lang } from "./types";
+import type { Plan } from "./plan";
 
 /**
  * The compliance / playbook checks a customer can switch on per their needs.
@@ -197,6 +198,25 @@ export const PRO_CHECKS = new Set<CheckId>([
 ]);
 
 export const isProCheck = (id: CheckId): boolean => PRO_CHECKS.has(id);
+
+/**
+ * The checks actually used to evaluate contracts for a given plan. On Free,
+ * Pro-only checks are forced off — the Settings screen already shows them as
+ * locked, but the stored toggle state defaults to "on" for everyone, so any
+ * reviewing logic that read `checks` directly would silently apply Pro-tier
+ * rules (ZATCA, liability floor, jurisdiction, renewal notice, …) to Free
+ * users. Every consumer that drives user-facing output must read through
+ * this instead of the raw `checks` state.
+ */
+export function effectiveChecks(
+  checks: Record<CheckId, boolean>,
+  plan: Plan,
+): Record<CheckId, boolean> {
+  if (plan !== "free") return checks;
+  const out = { ...checks };
+  for (const id of PRO_CHECKS) out[id] = false;
+  return out;
+}
 
 export const checkLabel = (d: CheckDef, lang: Lang): string =>
   lang === "ar" ? d.label_ar : d.label_en;

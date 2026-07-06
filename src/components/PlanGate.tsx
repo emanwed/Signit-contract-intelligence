@@ -3,41 +3,6 @@
 import { Lock, Sparkles } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 
-/** Slim upsell banner shown on Free — a persistent nudge with an upgrade CTA. */
-export function FreeBanner() {
-  const { L, setUpgradeOpen } = useApp();
-  return (
-    <div
-      className="flex items-center gap-2.5 mb-4 p-3"
-      style={{
-        background: "linear-gradient(90deg, var(--accent-soft), #fff5d6)",
-        border: "1px solid var(--border)",
-        borderRadius: 12,
-      }}
-    >
-      <Sparkles size={16} color="var(--accent)" className="shrink-0" />
-      <span style={{ fontSize: 12.5, color: "var(--text)", lineHeight: 1.5 }} className="flex-1">
-        {L.freeBanner}
-      </span>
-      <button
-        onClick={() => setUpgradeOpen(true)}
-        className="tap shrink-0"
-        style={{
-          background: "var(--cta)",
-          color: "var(--cta-ink)",
-          border: "none",
-          borderRadius: 9,
-          padding: "6px 12px",
-          fontSize: 12.5,
-          fontWeight: 700,
-        }}
-      >
-        {L.upgradePro}
-      </button>
-    </div>
-  );
-}
-
 /** Full-screen gate shown when a Pro-only feature is opened on Free. */
 export function ProGate({ title, body }: { title?: string; body?: string }) {
   const { L, setPlan } = useApp();

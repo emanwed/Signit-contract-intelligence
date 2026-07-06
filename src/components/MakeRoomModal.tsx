@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Sparkles, Trash2, X } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { useContracts } from "@/context/ContractsContext";
@@ -25,6 +25,8 @@ export function MakeRoomModal({
 }) {
   const { lang, L } = useApp();
   const { removeContract } = useContracts();
+  // Delete requires a second tap to confirm — only one row confirms at a time.
+  const [confirmId, setConfirmId] = useState<string | null>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -37,9 +39,20 @@ export function MakeRoomModal({
     };
   }, [onClose]);
 
+  // Auto-reset the pending confirmation if the user doesn't follow through.
+  useEffect(() => {
+    if (!confirmId) return;
+    const t = setTimeout(() => setConfirmId(null), 3500);
+    return () => clearTimeout(t);
+  }, [confirmId]);
+
   const del = (id: string) => {
-    removeContract(id);
-    onMadeRoom();
+    if (confirmId === id) {
+      removeContract(id);
+      onMadeRoom();
+    } else {
+      setConfirmId(id);
+    }
   };
 
   return (
@@ -86,41 +99,45 @@ export function MakeRoomModal({
         </div>
 
         <div className="px-5 py-4 flex flex-col gap-2">
-          {contracts.map((c) => (
-            <div
-              key={c.id}
-              className="flex items-center gap-3 p-3"
-              style={{
-                background: "var(--surface)",
-                border: "1px solid var(--border)",
-                borderRadius: 12,
-              }}
-            >
-              <div className="min-w-0 flex-1">
-                <div className="truncate" style={{ fontSize: 13.5, fontWeight: 600 }}>
-                  {lang === "ar" ? c.title_ar : c.title_en}
-                </div>
-                <div style={{ fontSize: 12, color: "var(--text-soft)" }}>
-                  {c.id} · {c.valueSAR ? money(c.valueSAR, lang) : "—"}
-                </div>
-              </div>
-              <button
-                onClick={() => del(c.id)}
-                className="tap flex items-center gap-1.5 shrink-0"
+          {contracts.map((c) => {
+            const confirming = confirmId === c.id;
+            return (
+              <div
+                key={c.id}
+                className="flex items-center gap-3 p-3"
                 style={{
-                  fontSize: 12.5,
-                  fontWeight: 700,
-                  color: "var(--low)",
-                  background: "var(--low-bg)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 9,
-                  padding: "6px 11px",
+                  background: "var(--surface)",
+                  border: `1px solid ${confirming ? "var(--low)" : "var(--border)"}`,
+                  borderRadius: 12,
                 }}
               >
-                <Trash2 size={14} /> {L.deleteContract}
-              </button>
-            </div>
-          ))}
+                <div className="min-w-0 flex-1">
+                  <div className="truncate" style={{ fontSize: 13.5, fontWeight: 600 }}>
+                    {lang === "ar" ? c.title_ar : c.title_en}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--text-soft)" }}>
+                    {c.id} · {c.valueSAR ? money(c.valueSAR, lang) : "—"}
+                  </div>
+                </div>
+                <button
+                  onClick={() => del(c.id)}
+                  className="tap flex items-center gap-1.5 shrink-0"
+                  style={{
+                    fontSize: 12.5,
+                    fontWeight: 700,
+                    color: confirming ? "var(--on-accent)" : "var(--low)",
+                    background: confirming ? "var(--low)" : "var(--low-bg)",
+                    border: `1px solid ${confirming ? "var(--low)" : "var(--border)"}`,
+                    borderRadius: 9,
+                    padding: "6px 11px",
+                  }}
+                >
+                  <Trash2 size={14} />
+                  {confirming ? L.confirmDelete : L.deleteContract}
+                </button>
+              </div>
+            );
+          })}
 
           <button
             onClick={onUpgrade}

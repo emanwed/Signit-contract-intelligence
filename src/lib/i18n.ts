@@ -146,7 +146,6 @@ export interface Dict {
   hijri: string;
   greg: string;
   newContract: string;
-  newDocument: string;
   navHome: string;
   navDocuments: string;
   navContracts: string;
@@ -162,6 +161,8 @@ export interface Dict {
   viewAs: string;
   prototype: string;
   planLabel: string;
+  resetDemo: string;
+  resetDemoDone: string;
   planFree: string;
   planPaid: string;
   proOnly: string;
@@ -263,51 +264,34 @@ export interface Dict {
   cmpLenses: string;
   cmpUploads: string;
   cmpAsk: string;
-  cmpAnalytics: string;
-  cmpRadar: string;
-  cmpRegister: string;
   cmpExtraction: string;
-  cmpClassRouting: string;
-  cmpCompliance: string;
-  cmpInApp: string;
-  cmpEmail: string;
-  cmpExport: string;
-  cmpSupport: string;
   valExecOnly: string;
   valAllLenses: string;
   valUploadsFree: string;
   valUploadsPro: string;
   valAskSingle: string;
   valAskPortfolio: string;
-  valLimited: string;
-  valFull: string;
-  valBasicList: string;
-  valFullRadar: string;
-  valCommunity: string;
-  valPriority: string;
   secIngest: string;
   secCompliance: string;
   secObligations: string;
   secIntel: string;
-  secEnterprise: string;
   cmpSourceClauses: string;
   cmpPdpl: string;
   cmpZatca: string;
   cmpAnomaly: string;
   cmpRenewals: string;
   cmpDashboard: string;
-  cmpClauseCompare: string;
   cmpWorkflow: string;
-  cmpIntegrations: string;
-  cmpAgent: string;
-  cmpMultiEntity: string;
+  cmpCompanyDocs: string;
+  cmpActionWindow: string;
   valExtractFree: string;
   valExtractPro: string;
   valPdplFree: string;
   valPdplPro: string;
   valRenewFree: string;
   valRenewPro: string;
-  valEnterprise: string;
+  valActionWindowFree: string;
+  valActionWindowPro: string;
   setTitle: string;
   setIntro: string;
   setRegulations: string;
@@ -385,7 +369,7 @@ export const T: Record<Lang, Dict> = {
     dir: "rtl",
     name: "ساين إت",
     tag: "ذكاء العقود بعد التوقيع",
-    overview: "العقود",
+    overview: "نظرة عامة",
     notifications: "مركز الإجراءات",
     list: "كل العقود",
     searchContracts: "ابحث في العقود…",
@@ -505,10 +489,9 @@ export const T: Record<Lang, Dict> = {
     hijri: "هـ",
     greg: "م",
     newContract: "عقد جديد",
-    newDocument: "مستند جديد",
     navHome: "الرئيسية",
     navDocuments: "المستندات",
-    navContracts: "ذكاء العقود",
+    navContracts: "العقود",
     navTemplates: "القوالب",
     navReports: "التقارير",
     settings: "الإعدادات",
@@ -521,6 +504,8 @@ export const T: Record<Lang, Dict> = {
     viewAs: "العرض بصفة",
     prototype: "نموذج أولي",
     planLabel: "الخطة",
+    resetDemo: "إعادة تعيين العرض",
+    resetDemoDone: "تمت إعادة تعيين العرض إلى حالته الأصلية",
     planFree: "مجانية",
     planPaid: "احترافية",
     proOnly: "ميزة احترافية",
@@ -630,51 +615,34 @@ export const T: Record<Lang, Dict> = {
     cmpLenses: "عدسات الأدوار",
     cmpUploads: "إدخال العقود",
     cmpAsk: "اسأل ساين إت (سؤال وجواب)",
-    cmpAnalytics: "لوحة المؤشرات والتحليلات",
-    cmpRadar: "رادار الالتزامات (هجري + ميلادي)",
-    cmpRegister: "سجل العقود: بحث وتصفية وفرز",
     cmpExtraction: "استخراج القيم بالذكاء",
-    cmpClassRouting: "توجيه ثقة التصنيف (تلقائي/فحص/يدوي)",
-    cmpCompliance: "فحوصات الامتثال (PDPL / ZATCA / الدليل)",
-    cmpInApp: "التنبيهات داخل النظام وإدارتها كإجراءات",
-    cmpEmail: "إشعارات البريد الإلكتروني",
-    cmpExport: "تصدير العقود",
-    cmpSupport: "الدعم",
     valExecOnly: "عدسة واحدة فقط",
     valAllLenses: "الثلاث عدسات",
     valUploadsFree: "يدوي — حتى ٣",
     valUploadsPro: "غير محدود + ترحيل العقود القديمة",
-    valAskSingle: "عقد واحد",
+    valAskSingle: "عقودك المرفوعة فقط",
     valAskPortfolio: "المحفظة كاملة",
-    valLimited: "محدودة",
-    valFull: "كاملة",
-    valBasicList: "قائمة أساسية",
-    valFullRadar: "رادار كامل",
-    valCommunity: "مجتمعي",
-    valPriority: "أولوية",
     secIngest: "الإدخال والاستخراج",
     secCompliance: "الامتثال",
     secObligations: "الالتزامات والعدسات",
     secIntel: "ذكاء المحفظة",
-    secEnterprise: "للمؤسسات",
     cmpSourceClauses: "عرض البند المصدر لكل قيمة",
     cmpPdpl: "حماية البيانات (PDPL)",
     cmpZatca: "الفوترة والغرامات (ZATCA)",
     cmpAnomaly: "كشف الشذوذ في البنود",
     cmpRenewals: "تتبّع التجديدات",
     cmpDashboard: "لوحة تنفيذية (تركّز/تعرّض/تصدير للمجلس)",
-    cmpClauseCompare: "مقارنة البنود عبر العقود",
-    cmpWorkflow: "سير عمل التجديد (مسؤولون، ملاحظات)",
-    cmpIntegrations: "التكاملات (توقيع، Slack/Teams، بريد)",
-    cmpAgent: "وكيل التزامات استباقي (ملخص أسبوعي)",
-    cmpMultiEntity: "تجميع متعدد الكيانات",
+    cmpWorkflow: "سير عمل الإجراءات (إسناد للفرق، تعليقات)",
+    cmpCompanyDocs: "مستندات سياسات الشركة (رفع ومراجعة)",
+    cmpActionWindow: "نطاق مركز الإجراءات الزمني",
     valExtractFree: "أساسي: طرف، قيمة، تاريخ",
     valExtractPro: "المخطط الكامل + درجات ثقة",
     valPdplFree: "عدد العقود فقط",
     valPdplPro: "ماسح تعرّض بربط المواد",
     valRenewFree: "قائمة ميلادية أساسية",
     valRenewPro: "رادار + تنبيهات الإشعار",
-    valEnterprise: "مؤسسات",
+    valActionWindowFree: "المتأخر وخلال ٧ أيام",
+    valActionWindowPro: "التقويم الكامل (٣٠+ يومًا)",
     setTitle: "إعداد الامتثال والمراجعة",
     setIntro:
       "حدّد ما يُراجَع عليه كل مستند: الأنظمة المحلية وقواعد دليل سياسات شركتك. يُطبَّق ما تُفعّله تلقائيًا على كامل المحفظة.",
@@ -744,7 +712,7 @@ export const T: Record<Lang, Dict> = {
     actComment: "أضاف تعليقًا",
     notBuiltTitle: "ميزة قائمة في ساين إت",
     notBuiltBody:
-      "هذه الميزة متوفّرة في منصة ساين إت، وهي خارج نطاق هذا النموذج الأولي الذي يركّز على «ذكاء العقود».",
+      "هذه الميزة متوفّرة في منصة ساين إت، وهي خارج نطاق هذا النموذج الأولي الذي يركّز على «العقود».",
     valuesTab: "القيم المستخرجة",
     documentTab: "المستند",
     docReconstructed: "نص مُعاد بناؤه من البنود المستخرجة",
@@ -780,7 +748,7 @@ export const T: Record<Lang, Dict> = {
     dir: "ltr",
     name: "Signit",
     tag: "Post-signature contract intelligence",
-    overview: "Contracts",
+    overview: "Overview",
     notifications: "Action Center",
     list: "All contracts",
     searchContracts: "Search contracts…",
@@ -900,10 +868,9 @@ export const T: Record<Lang, Dict> = {
     hijri: "AH",
     greg: "CE",
     newContract: "New contract",
-    newDocument: "New document",
     navHome: "Home",
     navDocuments: "Documents",
-    navContracts: "Contract Intelligence",
+    navContracts: "Contracts",
     navTemplates: "Templates",
     navReports: "Insights",
     settings: "Settings",
@@ -916,6 +883,8 @@ export const T: Record<Lang, Dict> = {
     viewAs: "View as",
     prototype: "Prototype",
     planLabel: "Plan",
+    resetDemo: "Reset demo",
+    resetDemoDone: "Demo reset to its original state",
     planFree: "Free",
     planPaid: "Pro",
     proOnly: "Pro feature",
@@ -1025,51 +994,34 @@ export const T: Record<Lang, Dict> = {
     cmpLenses: "Persona lenses",
     cmpUploads: "Contract ingestion",
     cmpAsk: "Ask Signit (Q&A)",
-    cmpAnalytics: "Insights & analytics",
-    cmpRadar: "Obligation radar (Hijri + Gregorian)",
-    cmpRegister: "Register — search, filter & sort",
     cmpExtraction: "AI field extraction",
-    cmpClassRouting: "Classification confidence routing",
-    cmpCompliance: "Compliance checks (PDPL / ZATCA / playbook)",
-    cmpInApp: "In-app notifications & actions",
-    cmpEmail: "Email notifications",
-    cmpExport: "Export contracts",
-    cmpSupport: "Support",
     valExecOnly: "Single lens only",
     valAllLenses: "All three",
     valUploadsFree: "Manual — up to 3",
     valUploadsPro: "Unlimited + legacy migration",
-    valAskSingle: "One contract",
+    valAskSingle: "Your uploaded contracts only",
     valAskPortfolio: "Whole portfolio",
-    valLimited: "Limited",
-    valFull: "Full",
-    valBasicList: "Basic list",
-    valFullRadar: "Full radar",
-    valCommunity: "Community",
-    valPriority: "Priority",
     secIngest: "Ingestion & extraction",
     secCompliance: "Compliance",
     secObligations: "Obligations & lenses",
     secIntel: "Portfolio intelligence",
-    secEnterprise: "Enterprise",
     cmpSourceClauses: "Source clause for each value",
     cmpPdpl: "Data protection (PDPL)",
     cmpZatca: "Invoicing & penalties (ZATCA)",
     cmpAnomaly: "Clause anomaly detection",
     cmpRenewals: "Renewal tracking",
     cmpDashboard: "Exec dashboard (concentration/exposure/board export)",
-    cmpClauseCompare: "Cross-contract clause comparison",
-    cmpWorkflow: "Renewal workflow (owners, notes)",
-    cmpIntegrations: "Integrations (e-sign, Slack/Teams, email)",
-    cmpAgent: "Proactive obligation agent (weekly digest)",
-    cmpMultiEntity: "Multi-entity rollups",
+    cmpWorkflow: "Action workflow (team assignment, notes)",
+    cmpCompanyDocs: "Company policy documents (upload & review)",
+    cmpActionWindow: "Action Center time horizon",
     valExtractFree: "Basic: party, value, date",
     valExtractPro: "Full schema + confidence",
     valPdplFree: "Contract count only",
     valPdplPro: "Exposure scanner + article mapping",
     valRenewFree: "Basic Gregorian list",
     valRenewPro: "Radar + notice alerts",
-    valEnterprise: "Enterprise",
+    valActionWindowFree: "Overdue + 7 days",
+    valActionWindowPro: "Full 30+ day calendar",
     setTitle: "Compliance & review setup",
     setIntro:
       "Choose what every document is reviewed against: local regulations and your company's playbook rules. Whatever you enable is applied automatically across the portfolio.",
@@ -1139,7 +1091,7 @@ export const T: Record<Lang, Dict> = {
     actComment: "added a comment",
     notBuiltTitle: "An existing Signit feature",
     notBuiltBody:
-      "This lives in the Signit product and is outside the scope of this prototype, which focuses on Contract Intelligence.",
+      "This lives in the Signit product and is outside the scope of this prototype, which focuses on Contracts.",
     valuesTab: "Extracted values",
     documentTab: "Document",
     docReconstructed: "Text reconstructed from the extracted clauses",

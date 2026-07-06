@@ -1,6 +1,7 @@
 import { documentText } from "./contractText";
 import { money } from "./format";
 import { factLabel } from "./i18n";
+import { FREE_FACT_KEYS } from "./plan";
 import type { Contract, Lang } from "./types";
 
 function triggerDownload(filename: string, href: string) {
@@ -22,9 +23,12 @@ const slug = (s: string) =>
  * Export a contract from the viewer. If it was uploaded as a PDF, the original
  * file is downloaded as-is; otherwise a plain-text export is generated from the
  * document text plus the AI-extracted values — useful for the demo portfolio.
+ * On Free, only the basic extraction fields are included (matching the values
+ * shown in the drawer) — Pro's fuller schema isn't handed out via export.
  */
-export function exportContract(c: Contract, lang: Lang): void {
-  // Uploaded document — download the original file.
+export function exportContract(c: Contract, lang: Lang, free = false): void {
+  // Uploaded document — download the original file (the user's own upload,
+  // not a Pro-tier extraction, so this is unaffected by plan).
   if (c.docDataUrl) {
     triggerDownload(c.docFileName ?? `${c.id}.pdf`, c.docDataUrl);
     return;
@@ -49,9 +53,10 @@ export function exportContract(c: Contract, lang: Lang): void {
   );
   lines.push("");
 
-  if (c.facts.length) {
+  const shownFacts = free ? c.facts.filter((f) => FREE_FACT_KEYS.has(f.k)) : c.facts;
+  if (shownFacts.length) {
     lines.push(ar ? "— القيم المستخرجة —" : "— Extracted values —");
-    for (const f of c.facts) {
+    for (const f of shownFacts) {
       lines.push(`• ${factLabel(lang, f.k)}: ${ar ? f.va : f.ve}`);
     }
     lines.push("");

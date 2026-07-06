@@ -87,8 +87,8 @@ export function Placeholder({ section }: { section: Section }) {
       </p>
       <p style={{ fontSize: 12.5, color: "var(--text-soft)", marginTop: 4 }}>
         {lang === "ar"
-          ? "افتح «ذكاء العقود» من القائمة لتجربة الميزة المُطبّقة."
-          : "Open “Contract Intelligence” from the menu to explore the built feature."}
+          ? "افتح «العقود» من القائمة لتجربة الميزة المُطبّقة."
+          : "Open “Contracts” from the menu to explore the built feature."}
       </p>
     </div>
   );

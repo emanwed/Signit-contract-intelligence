@@ -4,6 +4,7 @@ import {
   Building2,
   FlaskConical,
   Lock,
+  RotateCcw,
   Scale,
   Sparkles,
   Table2,
@@ -32,9 +33,12 @@ const PERSONAS: [Persona, LucideIcon][] = [
 export function PrototypeBar({
   persona,
   onPersona,
+  onReset,
 }: {
   persona: Persona;
   onPersona: (p: Persona) => void;
+  /** Restore the whole prototype to its seed state (fresh demo). */
+  onReset: () => void;
 }) {
   const { L, plan, setPlan, setUpgradeOpen } = useApp();
   const free = plan === "free";
@@ -130,6 +134,25 @@ export function PrototypeBar({
         >
           <Table2 size={13} />
           <span className="hidden sm:inline">{L.planCompare}</span>
+        </button>
+
+        <div className="shrink-0" style={{ width: 1, height: 18, background: "#2c2a45" }} />
+
+        <button
+          onClick={onReset}
+          title={L.resetDemo}
+          className="tap flex items-center gap-1.5 px-2.5 py-1 shrink-0 whitespace-nowrap"
+          style={{
+            fontSize: 11.5,
+            fontWeight: 600,
+            color: "#eceafd",
+            background: "rgba(255,255,255,.07)",
+            border: "1px solid #2c2a45",
+            borderRadius: 8,
+          }}
+        >
+          <RotateCcw size={13} className="rtl-flip" color="#b7adf5" />
+          <span className="hidden sm:inline">{L.resetDemo}</span>
         </button>
       </div>
     </div>

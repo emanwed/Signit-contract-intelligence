@@ -23,6 +23,8 @@ interface ContractsContextValue {
   archiveContract: (id: string) => void;
   /** Generate a unique C-#### id for a new contract. */
   nextId: () => string;
+  /** Restore the seed portfolio — clears uploads/edits/deletions (demo reset). */
+  resetContracts: () => void;
 }
 
 const ContractsContext = createContext<ContractsContextValue | null>(null);
@@ -84,6 +86,12 @@ export function ContractsProvider({ children }: { children: React.ReactNode }) {
     [deletedContracts],
   );
 
+  const resetContracts = useCallback(() => {
+    setContracts(seed);
+    setDeleted([]);
+    setArchived([]);
+  }, []);
+
   const nextId = useCallback(() => {
     const used = new Set(
       [...contracts, ...deletedContracts, ...archivedContracts].map((c) => c.id),
@@ -106,6 +114,7 @@ export function ContractsProvider({ children }: { children: React.ReactNode }) {
       restoreContract,
       archiveContract,
       nextId,
+      resetContracts,
     }),
     [
       contracts,
@@ -117,6 +126,7 @@ export function ContractsProvider({ children }: { children: React.ReactNode }) {
       restoreContract,
       archiveContract,
       nextId,
+      resetContracts,
     ],
   );
 

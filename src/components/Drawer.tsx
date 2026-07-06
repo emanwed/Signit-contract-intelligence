@@ -138,7 +138,7 @@ export function Drawer({
           </button>
           <div className="flex items-center gap-3">
             <button
-              onClick={() => exportContract(c, lang)}
+              onClick={() => exportContract(c, lang, free)}
               className="tap flex items-center gap-1.5"
               title={L.exportContract}
               style={{
