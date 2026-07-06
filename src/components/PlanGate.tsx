@@ -23,8 +23,8 @@ export function FreeBanner() {
         onClick={() => setUpgradeOpen(true)}
         className="tap shrink-0"
         style={{
-          background: "var(--grad-primary)",
-          color: "var(--on-accent)",
+          background: "var(--cta)",
+          color: "var(--cta-ink)",
           border: "none",
           borderRadius: 9,
           padding: "6px 12px",
@@ -97,8 +97,8 @@ export function ProGate({ title, body }: { title?: string; body?: string }) {
         onClick={() => setPlan("paid")}
         className="tap mt-2"
         style={{
-          background: "var(--grad-primary)",
-          color: "var(--on-accent)",
+          background: "var(--cta)",
+          color: "var(--cta-ink)",
           border: "none",
           borderRadius: 10,
           padding: "10px 18px",

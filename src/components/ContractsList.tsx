@@ -11,7 +11,6 @@ import {
   Plus,
   RefreshCw,
   RotateCcw,
-  ScanSearch,
   Search,
   Sparkles,
   Upload,
@@ -30,14 +29,13 @@ import {
   isExpiringSoon,
   type ContractStatusKey,
 } from "@/lib/status";
-import {
-  CLASS_TIER_KEY,
-  CLASS_TIER_TONE,
-  classConfidence,
-  classTier,
-  needsClassReview,
-} from "@/lib/classification";
-import type { Contract, ContractType, Lang, OverviewFilter } from "@/lib/types";
+import type {
+  Contract,
+  ContractType,
+  Lang,
+  OverviewFilter,
+  PayPeriod,
+} from "@/lib/types";
 
 type SortKey = "name" | "status" | "start" | "end" | "value";
 type SortDir = "asc" | "desc";
@@ -69,6 +67,29 @@ const PER_PAGE = [10, 25, 50];
 const title = (c: Contract, lang: Lang) => (lang === "ar" ? c.title_ar : c.title_en);
 const party = (c: Contract, lang: Lang) => (lang === "ar" ? c.party_ar : c.party_en);
 
+// How often the contract's value is paid — bilingual labels shown under the value.
+const PAY_PERIOD: Record<PayPeriod, { ar: string; en: string }> = {
+  annual: { ar: "سنويًا", en: "Annually" },
+  quarterly: { ar: "كل ٣ أشهر", en: "Quarterly" },
+  monthly: { ar: "شهريًا", en: "Monthly" },
+  biannual: { ar: "كل ٦ أشهر", en: "Semi-annually" },
+  oneoff: { ar: "دفعة واحدة", en: "One-off" },
+  milestone: { ar: "حسب المراحل", en: "Milestone-based" },
+};
+const TYPE_PERIOD: Record<ContractType, PayPeriod> = {
+  employment: "monthly",
+  licence: "annual",
+  msa: "quarterly",
+  lease: "annual",
+  po: "oneoff",
+  sow: "milestone",
+  nda: "oneoff",
+};
+const payPeriodLabel = (c: Contract, lang: Lang) => {
+  const key = c.payPeriod ?? TYPE_PERIOD[c.type];
+  return lang === "ar" ? PAY_PERIOD[key].ar : PAY_PERIOD[key].en;
+};
+
 /**
  * The contract register — a Signit-styled data table: search, pill filters with
  * a reset, sortable columns (status, start/end dates, auto-renewal, value, risk)
@@ -98,7 +119,6 @@ export function ContractsList({
   const [q, setQ] = useState("");
   const [typeF, setTypeF] = useState<"all" | ContractType>("all");
   const [autoOnly, setAutoOnly] = useState(false);
-  const [classOnly, setClassOnly] = useState(false);
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({
     key: "end",
     dir: "asc",
@@ -147,7 +167,6 @@ export function ContractsList({
     const out = byShared.filter((c) => {
       if (typeF !== "all" && c.type !== typeF) return false;
       if (autoOnly && !c.autoRenew) return false;
-      if (classOnly && !needsClassReview(c)) return false;
       if (term) {
         // Searches metadata AND the contract's content — its clauses, extracted
         // values, and full document text — so a user who only remembers a word
@@ -164,6 +183,12 @@ export function ContractsList({
 
     const dir = sort.dir === "asc" ? 1 : -1;
     return [...out].sort((a, b) => {
+      // Active contracts are always pinned to the top of the list, whatever the
+      // column sort — the chosen sort only orders rows within each status group.
+      const aAct = contractStatus(a) === "active" ? 0 : 1;
+      const bAct = contractStatus(b) === "active" ? 0 : 1;
+      if (aAct !== bAct) return aAct - bAct;
+
       let r = 0;
       switch (sort.key) {
         case "name":
@@ -186,11 +211,11 @@ export function ContractsList({
       }
       return r * dir;
     });
-  }, [byShared, q, typeF, autoOnly, classOnly, sort, lang, L]);
+  }, [byShared, q, typeF, autoOnly, sort, lang, L]);
 
   useEffect(() => {
     setPage(0);
-  }, [q, typeF, autoOnly, classOnly, filter, perPage]);
+  }, [q, typeF, autoOnly, filter, perPage]);
 
   const pageCount = Math.max(1, Math.ceil(rows.length / perPage));
   const safePage = Math.min(page, pageCount - 1);
@@ -204,12 +229,11 @@ export function ContractsList({
     );
 
   const anyActive =
-    !!q || typeF !== "all" || autoOnly || classOnly || filter !== null;
+    !!q || typeF !== "all" || autoOnly || filter !== null;
   const resetAll = () => {
     setQ("");
     setTypeF("all");
     setAutoOnly(false);
-    setClassOnly(false);
     setFilter(null);
   };
 
@@ -277,12 +301,6 @@ export function ContractsList({
           onClick={() => setAutoOnly((v) => !v)}
           Icon={RefreshCw}
           label={L.colAutoRenew}
-        />
-        <PillToggle
-          on={classOnly}
-          onClick={() => setClassOnly((v) => !v)}
-          Icon={ScanSearch}
-          label={L.fltNeedsClass}
         />
         {hasUploads && (
           <PillToggle
@@ -426,21 +444,6 @@ export function ContractsList({
                       <span>
                         {c.id} · {L.types[c.type]}
                       </span>
-                      {needsClassReview(c) && (
-                        <span
-                          className="inline-flex items-center gap-1"
-                          style={{
-                            fontSize: 10,
-                            fontWeight: 700,
-                            color: CLASS_TIER_TONE[classTier(c)],
-                            background: `color-mix(in srgb, ${CLASS_TIER_TONE[classTier(c)]} 15%, transparent)`,
-                            borderRadius: 5,
-                            padding: "1px 6px",
-                          }}
-                        >
-                          {L[CLASS_TIER_KEY[classTier(c)]]} · {classConfidence(c)}%
-                        </span>
-                      )}
                       {c.source === "added" && (
                         <span style={{ color: "var(--accent)", fontWeight: 700 }}>
                           {L.filterUploaded}
@@ -525,6 +528,14 @@ export function ContractsList({
                     >
                       {c.valueSAR ? money(c.valueSAR, lang) : "—"}
                     </span>
+                    {c.valueSAR > 0 && (
+                      <div
+                        className="whitespace-nowrap"
+                        style={{ fontSize: 11, color: "var(--text-soft)", marginTop: 2 }}
+                      >
+                        {payPeriodLabel(c, lang)}
+                      </div>
+                    )}
                   </Td>
                   <Td className="hidden lg:table-cell">
                     <span

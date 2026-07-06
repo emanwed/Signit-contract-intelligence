@@ -5,6 +5,7 @@ import {
   type Checks,
 } from "./playbook";
 import type { Contract, Lang } from "./types";
+import type { ResponseGroup } from "./actionResponses";
 
 /** The reminder/alert categories a user can opt out of (in-app and by email). */
 export type AlertKind = "renewal" | "compliance" | "anomaly" | "review";
@@ -18,6 +19,13 @@ export interface Alert {
   body: string;
   /** Contract this alert points at, so the panel can open it. */
   contractId?: string;
+  /** Default responsible party (obligation owner), shown in the action detail. */
+  assignee?: string;
+  /** Which set of outcome responses this action offers. */
+  responseGroup?: ResponseGroup;
+  /** Category label + due date, so the detail can mirror the list card exactly. */
+  categoryLabel?: string;
+  dateLabel?: string;
 }
 
 /** Per-category opt-in state. All on by default; the header lets users mute any. */
@@ -62,6 +70,7 @@ export function buildAlerts(
       out.push({
         id: `renewal-${c.id}`,
         kind: "renewal",
+        responseGroup: "renewal",
         severity,
         contractId: c.id,
         title: ar
@@ -84,6 +93,7 @@ export function buildAlerts(
       out.push({
         id: `compliance-${c.id}`,
         kind: "compliance",
+        responseGroup: "compliance",
         severity: "high",
         contractId: c.id,
         title: ar
@@ -99,6 +109,7 @@ export function buildAlerts(
       out.push({
         id: `anomaly-${c.id}`,
         kind: "anomaly",
+        responseGroup: "anomaly",
         severity: "medium",
         contractId: c.id,
         title: ar
@@ -116,6 +127,7 @@ export function buildAlerts(
       out.push({
         id: `review-${c.id}`,
         kind: "review",
+        responseGroup: "review",
         severity: "low",
         contractId: c.id,
         title: ar

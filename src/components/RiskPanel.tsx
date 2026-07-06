@@ -95,10 +95,10 @@ export function RiskPanel({ c }: { c: Contract }) {
             >
               {bandLabel}
             </text>
-            <text x="20" y="118" style={{ fontSize: 8, fill: "var(--text-soft)" }}>
+            <text x="24" y="118" textAnchor="middle" style={{ fontSize: 8, fill: "var(--text-soft)" }}>
               {L.riskLow}
             </text>
-            <text x="180" y="118" textAnchor="end" style={{ fontSize: 8, fill: "var(--text-soft)" }}>
+            <text x="176" y="118" textAnchor="middle" style={{ fontSize: 8, fill: "var(--text-soft)" }}>
               {L.riskHigh}
             </text>
           </svg>

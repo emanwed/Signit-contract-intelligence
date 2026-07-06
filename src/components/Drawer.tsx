@@ -278,12 +278,24 @@ export function Drawer({
             )
           ) : view === "values" ? (
             <>
+              {/* Source-linked-confidence promise, shown at the top of the
+                  extracted-values view (moved here from the portfolio page). */}
               <div
-                style={{ fontSize: 12.5, color: "var(--text-soft)", margin: "14px 0 8px" }}
+                className="flex items-start gap-2 p-3"
+                style={{
+                  background: "var(--accent-soft)",
+                  borderRadius: 12,
+                  fontSize: 12.5,
+                  color: "var(--text)",
+                  margin: "14px 0 10px",
+                }}
               >
-                {lang === "ar"
-                  ? "اضغط أي قيمة لرؤية مصدرها"
-                  : "Tap any value to see its source"}
+                <ShieldCheck
+                  size={16}
+                  color="var(--accent)"
+                  style={{ flexShrink: 0, marginTop: 1 }}
+                />
+                <span>{L.trustNote}</span>
               </div>
 
               {shownFacts.length === 0 && (
@@ -438,20 +450,20 @@ export function Drawer({
                   onClose();
                 } else setConfirmDel(true);
               }}
-              className="tap w-full flex items-center justify-center gap-2"
+              className="tap inline-flex items-center gap-1.5"
               title={L.deleteContract}
               style={{
-                fontSize: 13,
+                fontSize: 12.5,
                 fontWeight: 700,
                 color: confirmDel ? "var(--on-accent)" : "var(--low)",
                 background: confirmDel ? "var(--low)" : "var(--low-bg)",
                 border: `1px solid ${confirmDel ? "var(--low)" : "var(--border)"}`,
-                borderRadius: 10,
-                padding: "11px 14px",
+                borderRadius: 9,
+                padding: "6px 11px",
                 cursor: "pointer",
               }}
             >
-              <Trash2 size={16} /> {confirmDel ? L.confirmDelete : L.deleteContract}
+              <Trash2 size={15} /> {confirmDel ? L.confirmDelete : L.deleteContract}
             </button>
           </div>
         </div>

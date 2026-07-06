@@ -2,18 +2,22 @@ import type { Contract, Lang } from "./types";
 import { money } from "./format";
 
 export type ObligationCat =
+  | "renewal"
   | "payment"
   | "deliverable"
   | "compliance"
   | "notice"
-  | "insurance";
+  | "insurance"
+  | "review";
 
 export const OBLIGATION_CATS: ObligationCat[] = [
+  "renewal",
   "payment",
   "deliverable",
   "compliance",
   "notice",
   "insurance",
+  "review",
 ];
 
 /** Alert tiers — obligations fire reminders at 30 / 7 / 1 days, then escalate. */
@@ -35,6 +39,9 @@ const OWNERS: [string, string][] = [
   ["Legal Team", "Legal Ops Lead"],
   ["Procurement", "Head of Procurement"],
   ["Finance", "Finance Director"],
+  ["HR", "HR Director"],
+  ["IT", "IT Director"],
+  ["Operations", "Operations Lead"],
 ];
 
 function hash(s: string): number {
@@ -54,6 +61,18 @@ function addDays(days: number): string {
 
 function catTitle(cat: ObligationCat, c: Contract): { ar: string; en: string } {
   switch (cat) {
+    case "renewal":
+      return {
+        ar: `${c.title_ar} — التجديد خلال ${c.daysToRenew} يومًا`,
+        en: `${c.title_en} — renews in ${c.daysToRenew} days`,
+      };
+    case "review": {
+      const n = c.facts.filter((f) => f.conf === "low").length;
+      return {
+        ar: `مراجعة ${n} حقلًا منخفض الثقة قبل الاعتماد`,
+        en: `Review ${n} low-confidence field${n > 1 ? "s" : ""} before approval`,
+      };
+    }
     case "payment":
       return {
         ar: `إصدار الفاتورة بحلول الأول — دفع صافٍ ٣٠ يومًا (${money(c.valueSAR, "ar")})`,
@@ -95,6 +114,21 @@ export function generateObligations(contracts: Contract[]): Obligation[] {
     const h = hash(c.id);
     const [owner, manager] = OWNERS[h % OWNERS.length];
 
+    // Renewal — any contract renewing or ending within the next 90 days.
+    if (c.daysToRenew > 0 && c.daysToRenew <= 90) {
+      const [ro, rm] = OWNERS[(h + 2) % OWNERS.length];
+      out.push({
+        id: `${c.id}-renewal`,
+        contractId: c.id,
+        cat: "renewal",
+        title: catTitle("renewal", c),
+        deadlineGreg: addDays(c.daysToRenew),
+        daysLeft: c.daysToRenew,
+        owner: ro,
+        manager: rm,
+      });
+    }
+
     if (c.autoRenew && c.noticeDays > 0) {
       const daysLeft = c.daysToRenew - c.noticeDays;
       out.push({
@@ -106,6 +140,23 @@ export function generateObligations(contracts: Contract[]): Obligation[] {
         daysLeft,
         owner,
         manager,
+      });
+    }
+
+    // Review — AI left low-confidence extractions that a human should confirm.
+    const nLow = c.facts.filter((f) => f.conf === "low").length;
+    if (nLow > 0) {
+      const reviewDays = 5 + (h % 21); // 5..25 days out, deterministic
+      const [vo, vm] = OWNERS[(h + 1) % OWNERS.length];
+      out.push({
+        id: `${c.id}-review`,
+        contractId: c.id,
+        cat: "review",
+        title: catTitle("review", c),
+        deadlineGreg: addDays(reviewDays),
+        daysLeft: reviewDays,
+        owner: vo,
+        manager: vm,
       });
     }
 

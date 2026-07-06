@@ -44,9 +44,10 @@ export function Stat({
       disabled={!onClick}
       className="stat-card tap rise text-start w-full"
       style={{
-        background: "var(--surface)",
+        background:
+          "linear-gradient(155deg, var(--surface) 0%, var(--surface-alt) 100%)",
         border: "1px solid var(--border)",
-        borderRadius: 16,
+        borderRadius: 18,
         padding: 18,
         textAlign: "start",
         cursor: onClick ? "pointer" : "default",

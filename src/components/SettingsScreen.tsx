@@ -3,14 +3,22 @@
 import { useRef } from "react";
 import {
   Briefcase,
+  Building2,
   CalendarClock,
+  Coins,
+  Copyright,
+  Fingerprint,
   FileText,
   Gavel,
+  Landmark,
+  Lock,
   Scale,
+  ShieldAlert,
   ShieldCheck,
   Sparkles,
   Trash2,
   Upload,
+  Users,
   ReceiptText,
   type LucideIcon,
 } from "lucide-react";
@@ -29,6 +37,13 @@ const ICON: Record<CheckId, LucideIcon> = {
   pdpl: ShieldCheck,
   zatca: ReceiptText,
   laborLaw: Briefcase,
+  companiesLaw: Building2,
+  govTenders: Landmark,
+  antiBribery: ShieldAlert,
+  saudization: Users,
+  ipProtection: Copyright,
+  cybersecurity: Fingerprint,
+  aml: Coins,
   liabilityFloor: Scale,
   jurisdiction: Gavel,
   renewalNotice: CalendarClock,
@@ -43,8 +58,14 @@ const fmtSize = (bytes: number): string =>
 export function SettingsScreen() {
   const { lang, L, plan, setUpgradeOpen } = useApp();
   const free = plan === "free";
-  const { checks, toggleCheck, companyDocs, addCompanyDocs, removeCompanyDoc } =
-    useSettings();
+  const {
+    checks,
+    toggleCheck,
+    companyDocs,
+    addCompanyDocs,
+    removeCompanyDoc,
+    toggleCompanyDoc,
+  } = useSettings();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const regulations = CHECK_DEFS.filter((d) => d.group === "regulation");
@@ -106,75 +127,114 @@ export function SettingsScreen() {
           {L.setCompanyDocsHint}
         </div>
 
-        <input
-          ref={fileRef}
-          type="file"
-          multiple
-          accept=".pdf,.doc,.docx,.txt,.md"
-          onChange={onFiles}
-          className="hidden"
-        />
-        <button
-          onClick={() => fileRef.current?.click()}
-          className="tap w-full flex items-center justify-center gap-2 py-3"
-          style={{
-            border: "1.5px dashed var(--border)",
-            borderRadius: 12,
-            background: "var(--bg)",
-            color: "var(--accent)",
-            fontSize: 13.5,
-            fontWeight: 700,
-          }}
-        >
-          <Upload size={17} /> {L.setUpload}
-        </button>
-
-        <div className="mt-3 flex flex-col gap-2">
-          {companyDocs.length === 0 && (
-            <div style={{ fontSize: 13, color: "var(--text-soft)", padding: "6px 2px" }}>
-              {L.setNoDocs}
-            </div>
-          )}
-          {companyDocs.map((doc) => (
-            <div
-              key={doc.id}
-              className="flex items-center gap-3 p-2.5"
+        {free ? (
+          <button
+            onClick={() => setUpgradeOpen(true)}
+            className="tap w-full flex items-start gap-2 p-3.5 text-start"
+            style={{
+              background: "var(--accent-soft)",
+              border: "1px dashed var(--accent)",
+              borderRadius: 12,
+              color: "var(--accent)",
+            }}
+          >
+            <Lock size={16} className="shrink-0" style={{ marginTop: 1 }} />
+            <span style={{ fontSize: 12.5, fontWeight: 600, lineHeight: 1.6 }}>
+              {lang === "ar"
+                ? "رفع مستندات سياسات الشركة الداخلية ومراجعة العقود عليها متاح في الخطة الاحترافية."
+                : "Uploading internal company policy documents and reviewing against them is a Pro feature."}
+            </span>
+          </button>
+        ) : (
+          <>
+            <input
+              ref={fileRef}
+              type="file"
+              multiple
+              accept=".pdf,.doc,.docx,.txt,.md"
+              onChange={onFiles}
+              className="hidden"
+            />
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="tap w-full flex items-center justify-center gap-2 py-3"
               style={{
-                border: "1px solid var(--border)",
-                borderRadius: 10,
-                background: "var(--surface)",
+                border: "1.5px dashed var(--border)",
+                borderRadius: 12,
+                background: "var(--bg)",
+                color: "var(--accent)",
+                fontSize: 13.5,
+                fontWeight: 700,
               }}
             >
-              <span
-                className="flex items-center justify-center shrink-0"
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 9,
-                  background: "var(--accent-soft)",
-                }}
-              >
-                <FileText size={17} color="var(--accent)" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="truncate" style={{ fontSize: 13.5, fontWeight: 600 }}>
-                  {doc.name}
+              <Upload size={17} /> {L.setUpload}
+            </button>
+
+            <div className="mt-3 flex flex-col gap-2">
+              {companyDocs.length === 0 && (
+                <div style={{ fontSize: 13, color: "var(--text-soft)", padding: "6px 2px" }}>
+                  {L.setNoDocs}
                 </div>
-                <div style={{ fontSize: 11.5, color: "var(--text-soft)" }}>
-                  {fmtSize(doc.size)}
+              )}
+              {companyDocs.map((doc) => (
+                <div
+                  key={doc.id}
+                  className="flex items-center gap-3 p-2.5"
+                  style={{
+                    border: "1px solid var(--border)",
+                    borderRadius: 10,
+                    background: "var(--surface)",
+                    opacity: doc.enabled ? 1 : 0.55,
+                  }}
+                >
+                  <button
+                    onClick={() => removeCompanyDoc(doc.id)}
+                    aria-label={L.remove}
+                    className="tap flex items-center justify-center shrink-0"
+                    style={{ width: 32, height: 32, borderRadius: 8, color: "var(--low)" }}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                  <span
+                    className="flex items-center justify-center shrink-0"
+                    style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: 9,
+                      background: doc.enabled ? "var(--accent-soft)" : "var(--surface-alt)",
+                    }}
+                  >
+                    <FileText
+                      size={17}
+                      color={doc.enabled ? "var(--accent)" : "var(--text-soft)"}
+                    />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate" style={{ fontSize: 13.5, fontWeight: 600 }}>
+                      {doc.name}
+                    </div>
+                    <div style={{ fontSize: 11.5, color: "var(--text-soft)" }}>
+                      {fmtSize(doc.size)} ·{" "}
+                      {doc.enabled
+                        ? lang === "ar"
+                          ? "مُفعّل"
+                          : "Applied"
+                        : lang === "ar"
+                          ? "معطّل"
+                          : "Off"}
+                    </div>
+                  </div>
+                  <Switch
+                    on={doc.enabled}
+                    onToggle={() => toggleCompanyDoc(doc.id)}
+                    label={doc.name}
+                    mt={0}
+                  />
                 </div>
-              </div>
-              <button
-                onClick={() => removeCompanyDoc(doc.id)}
-                aria-label={L.remove}
-                className="tap flex items-center justify-center shrink-0"
-                style={{ width: 32, height: 32, borderRadius: 8, color: "var(--low)" }}
-              >
-                <Trash2 size={16} />
-              </button>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
       </Card>
 
       <div
@@ -306,10 +366,12 @@ function Switch({
   on,
   onToggle,
   label,
+  mt = 6,
 }: {
   on: boolean;
   onToggle: () => void;
   label: string;
+  mt?: number;
 }) {
   return (
     <button
@@ -327,7 +389,7 @@ function Switch({
         position: "relative",
         transition: "background .2s",
         cursor: "pointer",
-        marginTop: 6,
+        marginTop: mt,
       }}
     >
       <span

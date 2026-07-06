@@ -4,30 +4,45 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
+  BellRing,
   CalendarClock,
   Check,
   ChevronLeft,
+  CreditCard,
   Eye,
   FileText,
-  Plus,
+  ListChecks,
+  Lock,
+  Package,
+  Pencil,
+  RefreshCw,
   ScrollText,
   Send,
+  ShieldCheck,
+  Sparkles,
+  Umbrella,
   UserRound,
-  X,
+  type LucideIcon,
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { useContracts } from "@/context/ContractsContext";
 import {
   ASSIGNEES,
-  SUGGESTED_TAGS_AR,
-  SUGGESTED_TAGS_EN,
   useNotifications,
   type ActivityKind,
 } from "@/context/NotificationsContext";
 import type { Alert, AlertKind, AlertSeverity } from "@/lib/alerts";
+import {
+  RESPONSES,
+  RESPONSE_TONE_VAR,
+  findResponse,
+  responseLabel,
+  responseNext,
+  type ResponseGroup,
+} from "@/lib/actionResponses";
 import type { Contract, Lang } from "@/lib/types";
 
-const KIND_ICON: Record<AlertKind, typeof AlertTriangle> = {
+const KIND_ICON: Record<AlertKind, LucideIcon> = {
   renewal: CalendarClock,
   compliance: ScrollText,
   anomaly: AlertTriangle,
@@ -38,37 +53,30 @@ const SEV_COLOR: Record<AlertSeverity, string> = {
   medium: "var(--med)",
   low: "var(--low)",
 };
+
+// Icon + tone per action category — mirrors the list card exactly so the
+// detail header matches the card it was opened from.
+const CATEGORY_STYLE: Record<ResponseGroup, { Icon: LucideIcon; tone: string }> = {
+  renewal: { Icon: RefreshCw, tone: "var(--med)" },
+  notice: { Icon: BellRing, tone: "var(--low)" },
+  payment: { Icon: CreditCard, tone: "var(--accent)" },
+  deliverable: { Icon: Package, tone: "var(--med)" },
+  compliance: { Icon: ShieldCheck, tone: "var(--high)" },
+  insurance: { Icon: Umbrella, tone: "#8a4ce3" },
+  review: { Icon: Eye, tone: "var(--accent)" },
+  anomaly: { Icon: AlertTriangle, tone: "var(--med)" },
+};
 const ASSIGNEE_AR: Record<string, string> = {
   "Legal Team": "الفريق القانوني",
   Procurement: "المشتريات",
   Finance: "المالية",
+  HR: "الموارد البشرية",
+  IT: "تقنية المعلومات",
+  Operations: "العمليات",
   "Eman Wed": "إيمان ود",
 };
 const assigneeLabel = (a: string, lang: Lang) =>
   lang === "ar" ? ASSIGNEE_AR[a] ?? a : a;
-
-// @mentions — match "@" + any assignee's Arabic or English name, and highlight.
-const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const MENTION_LABELS = ASSIGNEES.flatMap((n) => [ASSIGNEE_AR[n] ?? n, n]);
-const MENTION_RE = new RegExp("@(?:" + MENTION_LABELS.map(esc).join("|") + ")", "g");
-
-function renderComment(text: string): React.ReactNode[] {
-  const out: React.ReactNode[] = [];
-  let last = 0;
-  let m: RegExpExecArray | null;
-  MENTION_RE.lastIndex = 0;
-  while ((m = MENTION_RE.exec(text)) !== null) {
-    if (m.index > last) out.push(text.slice(last, m.index));
-    out.push(
-      <span key={m.index} style={{ color: "var(--accent)", fontWeight: 700 }}>
-        {m[0]}
-      </span>,
-    );
-    last = m.index + m[0].length;
-  }
-  if (last < text.length) out.push(text.slice(last));
-  return out;
-}
 
 function timeAgo(at: number, lang: Lang): string {
   const s = Math.floor((Date.now() - at) / 1000);
@@ -94,24 +102,26 @@ export function AlertDetail({
   onClose: () => void;
   onOpenContract: (c: Contract) => void;
 }) {
-  const { lang, L, dir } = useApp();
+  const { lang, L, dir, plan, setUpgradeOpen } = useApp();
+  const isPro = plan === "paid";
   const { contracts } = useContracts();
-  const {
-    getState,
-    markRead,
-    toggleDone,
-    setAssignee,
-    addTag,
-    removeTag,
-    addComment,
-  } = useNotifications();
+  const { getState, markRead, toggleDone, resolveWithOutcome, setAssignee, addComment } =
+    useNotifications();
 
   const st = getState(alert.id);
-  const [tagInput, setTagInput] = useState("");
   const [comment, setComment] = useState("");
+
+  // The team shows as a chip; editing reveals a picker, and reassigning is
+  // confirmed (not instant).
+  const committedAssignee = st.assignee ?? alert.assignee ?? "";
+  const [pendingAssignee, setPendingAssignee] = useState(committedAssignee);
+  const [editingAssignee, setEditingAssignee] = useState(false);
 
   useEffect(() => {
     markRead(alert.id);
+    setPendingAssignee(st.assignee ?? alert.assignee ?? "");
+    setEditingAssignee(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [alert.id, markRead]);
 
   useEffect(() => {
@@ -129,17 +139,12 @@ export function AlertDetail({
     () => contracts.find((c) => c.id === alert.contractId),
     [contracts, alert.contractId],
   );
-  const Icon = KIND_ICON[alert.kind];
-  const color = SEV_COLOR[alert.severity];
-  const suggested = lang === "ar" ? SUGGESTED_TAGS_AR : SUGGESTED_TAGS_EN;
+  // Match the list card: use the category icon + tone when known, else fall
+  // back to the alert kind/severity (header-bell alerts).
+  const catStyle = alert.responseGroup ? CATEGORY_STYLE[alert.responseGroup] : null;
+  const Icon = catStyle ? catStyle.Icon : KIND_ICON[alert.kind];
+  const color = catStyle ? catStyle.tone : SEV_COLOR[alert.severity];
 
-  const submitTag = () => {
-    const t = tagInput.trim();
-    if (t) {
-      addTag(alert.id, t);
-      setTagInput("");
-    }
-  };
   const submitComment = () => {
     const t = comment.trim();
     if (t) {
@@ -147,11 +152,6 @@ export function AlertDetail({
       setComment("");
     }
   };
-  const insertMention = (name: string) => {
-    const token = "@" + assigneeLabel(name, lang) + " ";
-    setComment((v) => (v.trim() ? v.replace(/\s*$/, "") + " " : "") + token);
-  };
-
   const actText = (kind: ActivityKind): string => {
     const map: Record<ActivityKind, string> = {
       done: L.actDone,
@@ -161,9 +161,24 @@ export function AlertDetail({
       tag_add: L.actTagAdd,
       tag_remove: L.actTagRemove,
       comment: L.actComment,
+      outcome: L.actOutcome,
     };
     return map[kind];
   };
+
+  // Outcome activity carries "group:key" — resolve it to a localised label.
+  const activityValue = (a: { kind: ActivityKind; value?: string }): string => {
+    if (a.kind === "outcome" && a.value) {
+      const [group, key] = a.value.split(":");
+      const r = findResponse(group as never, key);
+      return r ? responseLabel(r, lang) : a.value;
+    }
+    return a.value ? assigneeLabel(a.value, lang) : "";
+  };
+
+  const group = alert.responseGroup;
+  const responses = group ? RESPONSES[group] : [];
+  const chosen = findResponse(group as never, st.outcome?.key);
 
   return (
     <div
@@ -216,22 +231,22 @@ export function AlertDetail({
             )}{" "}
             {L.back}
           </button>
-          <button
-            onClick={() => toggleDone(alert.id)}
-            className="tap flex items-center gap-1.5"
-            style={{
-              fontSize: 12.5,
-              fontWeight: 700,
-              color: st.done ? "var(--high)" : "var(--on-accent)",
-              background: st.done ? "var(--high-bg)" : "var(--grad-primary)",
-              border: st.done ? "1px solid var(--high)" : "none",
-              borderRadius: 9,
-              padding: "6px 12px",
-              cursor: "pointer",
-            }}
-          >
-            <Check size={14} /> {st.done ? L.taskDone : L.taskMarkDone}
-          </button>
+          {st.done && (
+            <span
+              className="inline-flex items-center gap-1.5"
+              style={{
+                fontSize: 12.5,
+                fontWeight: 700,
+                color: "var(--high)",
+                background: "var(--high-bg)",
+                border: "1px solid var(--high)",
+                borderRadius: 9,
+                padding: "6px 12px",
+              }}
+            >
+              <Check size={14} /> {L.taskDone}
+            </span>
+          )}
         </div>
 
         <div className="px-5 py-5" style={{ flex: 1 }}>
@@ -260,9 +275,28 @@ export function AlertDetail({
               >
                 {alert.title}
               </h2>
-              <p style={{ fontSize: 13, color: "var(--text-soft)", lineHeight: 1.6, marginTop: 3 }}>
-                {alert.body}
-              </p>
+              {alert.categoryLabel ? (
+                <div
+                  className="flex items-center gap-x-2.5 gap-y-1 flex-wrap mt-1.5"
+                  style={{ fontSize: 12, color: "var(--text-soft)" }}
+                >
+                  <span style={{ fontWeight: 700, color }}>{alert.categoryLabel}</span>
+                  {contract && (
+                    <span>
+                      {contract.id} · {lang === "ar" ? contract.title_ar : contract.title_en}
+                    </span>
+                  )}
+                  {alert.dateLabel && (
+                    <span className="inline-flex items-center gap-1">
+                      <CalendarClock size={12} /> {alert.dateLabel}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <p style={{ fontSize: 13, color: "var(--text-soft)", lineHeight: 1.6, marginTop: 3 }}>
+                  {alert.body}
+                </p>
+              )}
             </div>
           </div>
 
@@ -284,97 +318,228 @@ export function AlertDetail({
             </button>
           )}
 
-          {/* Assignee */}
+          {/* Assignee — team assignment is a Pro feature; reassigning is
+              confirmed before it takes effect */}
           <Section title={L.taskAssignee} icon={UserRound}>
-            <select
-              value={st.assignee ?? ""}
-              onChange={(e) => setAssignee(alert.id, e.target.value || null)}
-              className="w-full"
-              style={{
-                background: "var(--surface)",
-                border: "1px solid var(--border)",
-                borderRadius: 9,
-                padding: "9px 10px",
-                fontSize: 13,
-                color: "var(--text)",
-                fontFamily: "inherit",
-              }}
-            >
-              <option value="">{L.taskUnassigned}</option>
-              {ASSIGNEES.map((a) => (
-                <option key={a} value={a}>
-                  {assigneeLabel(a, lang)}
-                </option>
-              ))}
-            </select>
-          </Section>
-
-          {/* Tags */}
-          <Section title={L.taskTags} icon={Plus}>
-            <div className="flex items-center gap-1.5 flex-wrap mb-2">
-              {st.tags.map((t) => (
+            {!isPro ? (
+              <button
+                onClick={() => setUpgradeOpen(true)}
+                className="tap w-full flex items-start gap-2 p-3 text-start"
+                style={{
+                  background: "var(--accent-soft)",
+                  border: "1px dashed var(--accent)",
+                  borderRadius: 12,
+                  color: "var(--accent)",
+                }}
+              >
+                <Lock size={15} className="shrink-0" style={{ marginTop: 1 }} />
+                <span style={{ fontSize: 12.5, fontWeight: 600, lineHeight: 1.5 }}>
+                  {lang === "ar"
+                    ? "إسناد الإجراءات إلى الفرق متاح في الخطة الاحترافية."
+                    : "Assigning actions to teams is a Pro feature."}
+                </span>
+              </button>
+            ) : !editingAssignee ? (
+              <div className="flex items-center gap-2 flex-wrap">
                 <span
-                  key={t}
-                  className="inline-flex items-center gap-1"
+                  className="inline-flex items-center gap-1.5"
                   style={{
-                    fontSize: 12,
+                    fontSize: 12.5,
                     fontWeight: 600,
                     color: "var(--accent)",
                     background: "var(--accent-soft)",
                     borderRadius: 999,
-                    padding: "3px 5px 3px 10px",
+                    padding: "5px 12px",
                   }}
                 >
-                  {t}
-                  <button
-                    onClick={() => removeTag(alert.id, t)}
-                    aria-label="remove"
-                    className="tap flex items-center"
-                    style={{ color: "var(--accent)" }}
-                  >
-                    <X size={12} />
-                  </button>
+                  <UserRound size={13} />
+                  {committedAssignee ? assigneeLabel(committedAssignee, lang) : L.taskUnassigned}
                 </span>
-              ))}
-            </div>
-            <div className="flex items-center gap-1.5 flex-wrap mb-2">
-              {suggested
-                .filter((t) => !st.tags.includes(t))
-                .map((t) => (
+                <button
+                  onClick={() => setEditingAssignee(true)}
+                  className="tap inline-flex items-center gap-1"
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "var(--text-soft)",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  <Pencil size={12} /> {lang === "ar" ? "تغيير" : "Change"}
+                </button>
+              </div>
+            ) : (
+              <>
+                <select
+                  value={pendingAssignee}
+                  onChange={(e) => setPendingAssignee(e.target.value)}
+                  className="w-full"
+                  style={{
+                    background: "var(--surface)",
+                    border: `1px solid ${pendingAssignee !== committedAssignee ? "var(--accent)" : "var(--border)"}`,
+                    borderRadius: 9,
+                    padding: "9px 10px",
+                    fontSize: 13,
+                    color: "var(--text)",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  <option value="">{L.taskUnassigned}</option>
+                  {ASSIGNEES.map((a) => (
+                    <option key={a} value={a}>
+                      {assigneeLabel(a, lang)}
+                    </option>
+                  ))}
+                </select>
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
                   <button
-                    key={t}
-                    onClick={() => addTag(alert.id, t)}
-                    className="tap"
+                    onClick={() => {
+                      setAssignee(alert.id, pendingAssignee || null);
+                      setEditingAssignee(false);
+                    }}
+                    disabled={pendingAssignee === committedAssignee}
+                    className="tap inline-flex items-center gap-1.5"
                     style={{
-                      fontSize: 11.5,
-                      color: "var(--text-soft)",
-                      background: "var(--surface)",
-                      border: "1px dashed var(--border)",
-                      borderRadius: 999,
-                      padding: "3px 9px",
+                      fontSize: 12.5,
+                      fontWeight: 700,
+                      color: "var(--on-accent)",
+                      background: "var(--grad-primary)",
+                      border: "none",
+                      borderRadius: 9,
+                      padding: "6px 14px",
+                      cursor: "pointer",
+                      opacity: pendingAssignee === committedAssignee ? 0.5 : 1,
                     }}
                   >
-                    + {t}
+                    <Check size={13} /> {lang === "ar" ? "تأكيد" : "Confirm"}
                   </button>
-                ))}
-            </div>
-            <input
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && submitTag()}
-              placeholder={L.taskAddTag}
-              className="w-full"
-              style={{
-                background: "var(--surface)",
-                border: "1px solid var(--border)",
-                borderRadius: 9,
-                padding: "8px 10px",
-                fontSize: 12.5,
-                color: "var(--text)",
-                fontFamily: "inherit",
-              }}
-            />
+                  <button
+                    onClick={() => {
+                      setPendingAssignee(committedAssignee);
+                      setEditingAssignee(false);
+                    }}
+                    className="tap"
+                    style={{
+                      fontSize: 12.5,
+                      fontWeight: 600,
+                      color: "var(--text-soft)",
+                      background: "var(--surface)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 9,
+                      padding: "6px 14px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {lang === "ar" ? "إلغاء" : "Cancel"}
+                  </button>
+                </div>
+              </>
+            )}
           </Section>
+
+          {/* Action taken — log the outcome so the system schedules the next
+              periodic action and updates the insights. */}
+          {responses.length > 0 && (
+            <Section title={L.taskOutcome} icon={ListChecks}>
+              <div style={{ fontSize: 12, color: "var(--text-soft)", lineHeight: 1.5, marginBottom: 10 }}>
+                {L.taskOutcomePrompt}
+              </div>
+              <div className="flex flex-col gap-2">
+                {responses.map((r) => {
+                  const on = st.outcome?.key === r.key;
+                  const tone = RESPONSE_TONE_VAR[r.tone];
+                  return (
+                    <button
+                      key={r.key}
+                      onClick={() =>
+                        on
+                          ? toggleDone(alert.id)
+                          : resolveWithOutcome(alert.id, group as string, r.key)
+                      }
+                      aria-pressed={on}
+                      className="tap flex items-center gap-3 text-start"
+                      style={{
+                        borderRadius: 12,
+                        padding: "11px 13px",
+                        fontSize: 13.5,
+                        fontWeight: on ? 600 : 500,
+                        color: "var(--text)",
+                        background: on
+                          ? `color-mix(in srgb, ${tone} 7%, var(--surface))`
+                          : "var(--surface)",
+                        border: `1px solid ${on ? `color-mix(in srgb, ${tone} 45%, var(--border))` : "var(--border)"}`,
+                        boxShadow: "var(--shadow)",
+                        transition: "background .15s, border-color .15s",
+                      }}
+                    >
+                      <span
+                        aria-hidden
+                        className="flex items-center justify-center shrink-0"
+                        style={{
+                          width: 19,
+                          height: 19,
+                          borderRadius: 999,
+                          background: on ? tone : "transparent",
+                          border: `1.5px solid ${on ? tone : "var(--border)"}`,
+                          color: "var(--on-accent)",
+                          transition: "background .15s, border-color .15s",
+                        }}
+                      >
+                        {on && <Check size={12} strokeWidth={3} />}
+                      </span>
+                      <span className="flex-1">{responseLabel(r, lang)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {chosen && (
+                <div
+                  className="rise flex items-start gap-3 mt-4 p-4"
+                  style={{
+                    background:
+                      "linear-gradient(155deg, var(--accent-soft) 0%, color-mix(in srgb, var(--accent) 9%, var(--surface)) 100%)",
+                    border: "1px solid color-mix(in srgb, var(--accent) 30%, var(--border))",
+                    borderRadius: 16,
+                    boxShadow: "var(--shadow)",
+                  }}
+                >
+                  <span
+                    className="flex items-center justify-center shrink-0"
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 10,
+                      background: "var(--accent)",
+                      color: "var(--on-accent)",
+                      boxShadow: "0 2px 6px color-mix(in srgb, var(--accent) 45%, transparent)",
+                    }}
+                  >
+                    <Sparkles size={16} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div
+                      className="inline-flex items-center gap-1.5"
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 800,
+                        color: "var(--accent)",
+                        letterSpacing: 0.4,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {L.taskNextStep}
+                    </div>
+                    <div style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.7, marginTop: 4 }}>
+                      {responseNext(chosen, lang)}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </Section>
+          )}
 
           {/* Comments */}
           <Section title={L.taskComments} icon={FileText}>
@@ -403,7 +568,7 @@ export function AlertDetail({
                     </span>
                   </div>
                   <div style={{ fontSize: 12.5, color: "var(--text)", lineHeight: 1.6 }}>
-                    {renderComment(cm.text)}
+                    {cm.text}
                   </div>
                 </div>
               ))}
@@ -462,29 +627,6 @@ export function AlertDetail({
                 <Send size={16} className="rtl-flip" />
               </button>
             </div>
-            <div className="flex items-center gap-1.5 flex-wrap mt-2">
-              <span style={{ fontSize: 11, color: "var(--text-soft)" }}>
-                {lang === "ar" ? "أشِر إلى:" : "Mention:"}
-              </span>
-              {ASSIGNEES.map((n) => (
-                <button
-                  key={n}
-                  onClick={() => insertMention(n)}
-                  className="tap"
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: "var(--accent)",
-                    background: "var(--accent-soft)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 999,
-                    padding: "2px 9px",
-                  }}
-                >
-                  @{assigneeLabel(n, lang)}
-                </button>
-              ))}
-            </div>
           </Section>
 
           {/* Activity log */}
@@ -512,7 +654,7 @@ export function AlertDetail({
                       <div style={{ fontSize: 12.5, color: "var(--text)", lineHeight: 1.5 }}>
                         <b style={{ fontWeight: 700 }}>{assigneeLabel(a.author, lang)}</b>{" "}
                         {actText(a.kind)}
-                        {a.value ? ` ${assigneeLabel(a.value, lang)}` : ""}
+                        {activityValue(a) ? ` ${activityValue(a)}` : ""}
                       </div>
                       <div style={{ fontSize: 10.5, color: "var(--text-soft)", marginTop: 1 }}>
                         {timeAgo(a.at, lang)}

@@ -10,6 +10,13 @@ export type CheckId =
   | "pdpl"
   | "zatca"
   | "laborLaw"
+  | "companiesLaw"
+  | "govTenders"
+  | "antiBribery"
+  | "saudization"
+  | "ipProtection"
+  | "cybersecurity"
+  | "aml"
   | "liabilityFloor"
   | "jurisdiction"
   | "renewalNotice";
@@ -56,6 +63,76 @@ export const CHECK_DEFS: CheckDef[] = [
     desc_ar: "إحالة عقود العمل للمراجعة وفق نظام العمل ولوائحه التنفيذية.",
   },
   {
+    id: "companiesLaw",
+    group: "regulation",
+    label_en: "Companies Law",
+    label_ar: "نظام الشركات",
+    desc_en:
+      "Check signing authority, representation and governance clauses against the Companies Law.",
+    desc_ar:
+      "التحقق من صلاحيات التوقيع والتمثيل وبنود الحوكمة وفق نظام الشركات ولائحته.",
+  },
+  {
+    id: "govTenders",
+    group: "regulation",
+    label_en: "Government Tenders & Procurement Law",
+    label_ar: "نظام المنافسات والمشتريات الحكومية",
+    desc_en:
+      "Flag contracts with government entities for alignment with the Tenders & Procurement Law.",
+    desc_ar:
+      "رصد العقود مع الجهات الحكومية لمواءمتها مع نظام المنافسات والمشتريات الحكومية.",
+  },
+  {
+    id: "antiBribery",
+    group: "regulation",
+    label_en: "Anti-Bribery & Integrity (Nazaha)",
+    label_ar: "مكافحة الرشوة والنزاهة",
+    desc_en:
+      "Require anti-bribery, conflict-of-interest and integrity clauses per the Anti-Bribery Law.",
+    desc_ar:
+      "اشتراط بنود مكافحة الرشوة وتعارض المصالح والنزاهة وفق نظام مكافحة الرشوة.",
+  },
+  {
+    id: "saudization",
+    group: "regulation",
+    label_en: "Saudization (Nitaqat)",
+    label_ar: "السعودة (نطاقات)",
+    desc_en:
+      "Check workforce and manpower-supply contracts against Saudization (Nitaqat) requirements.",
+    desc_ar:
+      "مراجعة عقود القوى العاملة والتوريد البشري وفق متطلبات السعودة (نطاقات).",
+  },
+  {
+    id: "ipProtection",
+    group: "regulation",
+    label_en: "Intellectual Property (SAIP)",
+    label_ar: "حماية الملكية الفكرية (الهيئة السعودية)",
+    desc_en:
+      "Review IP ownership, licensing and assignment clauses against SAIP frameworks.",
+    desc_ar:
+      "مراجعة بنود ملكية وترخيص وتنازل الملكية الفكرية وفق أطر الهيئة السعودية للملكية الفكرية.",
+  },
+  {
+    id: "cybersecurity",
+    group: "regulation",
+    label_en: "Essential Cybersecurity Controls (NCA)",
+    label_ar: "الضوابط الأساسية للأمن السيبراني (الهيئة الوطنية)",
+    desc_en:
+      "Flag IT, cloud and data contracts for alignment with the NCA Essential Cybersecurity Controls.",
+    desc_ar:
+      "رصد عقود التقنية والسحابة والبيانات لمواءمتها مع الضوابط الأساسية للأمن السيبراني.",
+  },
+  {
+    id: "aml",
+    group: "regulation",
+    label_en: "Anti-Money Laundering",
+    label_ar: "مكافحة غسل الأموال",
+    desc_en:
+      "Require KYC, source-of-funds and AML clauses in high-value and financial contracts.",
+    desc_ar:
+      "اشتراط بنود اعرف عميلك ومصدر الأموال ومكافحة غسل الأموال في العقود المالية وعالية القيمة.",
+  },
+  {
     id: "liabilityFloor",
     group: "playbook",
     label_en: "Minimum liability cap",
@@ -88,6 +165,13 @@ export const DEFAULT_CHECKS: Record<CheckId, boolean> = {
   pdpl: true,
   zatca: true,
   laborLaw: true,
+  companiesLaw: true,
+  govTenders: true,
+  antiBribery: true,
+  saudization: true,
+  ipProtection: true,
+  cybersecurity: true,
+  aml: true,
   liabilityFloor: true,
   jurisdiction: true,
   renewalNotice: true,
@@ -100,6 +184,13 @@ export const DEFAULT_CHECKS: Record<CheckId, boolean> = {
  */
 export const PRO_CHECKS = new Set<CheckId>([
   "zatca",
+  "companiesLaw",
+  "govTenders",
+  "antiBribery",
+  "saudization",
+  "ipProtection",
+  "cybersecurity",
+  "aml",
   "liabilityFloor",
   "jurisdiction",
   "renewalNotice",

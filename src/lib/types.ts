@@ -9,9 +9,7 @@ export type TabKey =
   | "search"
   | "notifications"
   | "notifsettings"
-  | "settings"
-  | "archive"
-  | "soon";
+  | "settings";
 
 /** Primary (first-layer) navigation sections, mirroring the Signit product. */
 export type Section =
@@ -80,6 +78,15 @@ export interface Fact {
   se: string;
 }
 
+/** Payment frequency for a contract's value. */
+export type PayPeriod =
+  | "annual"
+  | "quarterly"
+  | "monthly"
+  | "biannual"
+  | "oneoff"
+  | "milestone";
+
 export interface Contract {
   id: string;
   type: ContractType;
@@ -92,6 +99,8 @@ export interface Contract {
   party_ar: string;
   party_en: string;
   valueSAR: number;
+  /** How often the value is paid. Optional — derived from `type` when absent. */
+  payPeriod?: PayPeriod;
   /** Lifecycle status. Optional — derived from the end date when absent. */
   status?: "active" | "draft" | "inactive";
   /** Contract start / signing date (Gregorian). Optional — derived if absent. */

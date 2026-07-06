@@ -27,7 +27,7 @@ interface ContractsContextValue {
 
 const ContractsContext = createContext<ContractsContextValue | null>(null);
 
-const seed: Contract[] = CONTRACTS.map((c) => ({ ...c, source: "seed" }));
+const seed: Contract[] = CONTRACTS.map((c) => ({ ...c, source: c.source ?? "seed" }));
 
 /**
  * Holds the live portfolio in memory (seeded from the sample data), plus a

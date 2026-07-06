@@ -4,9 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { useContracts } from "@/context/ContractsContext";
-import { useSettings } from "@/context/SettingsContext";
 import { useNotifications } from "@/context/NotificationsContext";
-import { buildAlerts } from "@/lib/alerts";
+import { alertTier, generateObligations, type AlertTier } from "@/lib/obligations";
 import type {
   Contract,
   OverviewFilter,
@@ -25,10 +24,7 @@ import { PrototypeBar, PROTOTYPE_BAR_H } from "@/components/PrototypeBar";
 import { Overview } from "@/components/Overview";
 import { ObligationsCalendar } from "@/components/ObligationsCalendar";
 import { SemanticSearch } from "@/components/SemanticSearch";
-import { NotificationsScreen } from "@/components/NotificationsScreen";
 import { NotificationSettings } from "@/components/NotificationSettings";
-import { ComingSoon } from "@/components/ComingSoon";
-import { ArchiveScreen } from "@/components/ArchiveScreen";
 import { AskFab } from "@/components/AskFab";
 import { Drawer } from "@/components/Drawer";
 import { AlertDetail } from "@/components/AlertDetail";
@@ -59,14 +55,11 @@ const TAB_LABEL: Record<TabKey, keyof Dict> = {
   notifications: "notifications",
   notifsettings: "notifSettingsTab",
   settings: "complianceTab",
-  archive: "archiveTab",
-  soon: "soonTab",
 };
 
 export default function Page() {
   const { lang, L, plan, upgradeOpen, setUpgradeOpen } = useApp();
   const { contracts } = useContracts();
-  const { checks, alertPrefs } = useSettings();
   const { getState } = useNotifications();
   const free = plan === "free";
 
@@ -92,11 +85,25 @@ export default function Page() {
   const startAdd = () =>
     freeAtLimit ? setMakeRoomOpen(true) : setAddOpen(true);
 
-  // Action Center badge — open (not-done) action items across every stream.
+  // Action Center badge — counts exactly the open actions shown in مركز الإجراءات
+  // for this plan and lens (same gating as the list, minus its ad-hoc filters).
   const openActions = useMemo(() => {
-    const alerts = buildAlerts(contracts, checks, alertPrefs, lang);
-    return alerts.filter((a) => !getState(a.id).done).length;
-  }, [contracts, checks, alertPrefs, lang, getState]);
+    const personaTeam = free
+      ? null
+      : persona === "proc"
+        ? "Procurement"
+        : persona === "legal"
+          ? "Legal Team"
+          : null;
+    const FREE_TIERS = new Set<AlertTier>(["overdue", "d1", "d7"]);
+    return generateObligations(contracts).filter((o) => {
+      const st = getState(`ob-${o.id}`);
+      if (st.done) return false;
+      if (personaTeam && (st.assignee ?? o.owner) !== personaTeam) return false;
+      if (free && !FREE_TIERS.has(alertTier(o.daysLeft))) return false;
+      return true;
+    }).length;
+  }, [contracts, free, persona, getState]);
 
   useEffect(() => {
     if (!notice) return;
@@ -235,7 +242,6 @@ export default function Page() {
             <>
               {free &&
                 tab !== "settings" &&
-                tab !== "obligations" &&
                 tab !== "search" && <FreeBanner />}
               {tab === "overview" && (
                 <Overview
@@ -246,12 +252,6 @@ export default function Page() {
                   onTab={onTab}
                 />
               )}
-              {tab === "obligations" &&
-                (free ? (
-                  <ProGate title={L.obTab} body={L.obIntro} />
-                ) : (
-                  <ObligationsCalendar onOpenAlert={setActiveAlert} />
-                ))}
               {tab === "search" &&
                 (free ? (
                   <ProGate title={L.ssTab} body={L.ssIntro} />
@@ -259,12 +259,13 @@ export default function Page() {
                   <SemanticSearch onOpen={setActive} />
                 ))}
               {tab === "notifications" && (
-                <NotificationsScreen onOpenAlert={setActiveAlert} />
+                <ObligationsCalendar
+                  persona={effPersona}
+                  onOpenAlert={setActiveAlert}
+                />
               )}
               {tab === "notifsettings" && <NotificationSettings />}
               {tab === "settings" && <SettingsScreen />}
-              {tab === "archive" && <ArchiveScreen />}
-              {tab === "soon" && <ComingSoon />}
             </>
           ) : (
             <Placeholder section={section} />

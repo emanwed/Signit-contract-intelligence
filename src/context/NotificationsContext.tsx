@@ -16,7 +16,14 @@ export type ActivityKind =
   | "unassigned"
   | "tag_add"
   | "tag_remove"
-  | "comment";
+  | "comment"
+  | "outcome";
+
+/** A logged outcome: which response was chosen, keyed by group so it re-localises. */
+export interface Outcome {
+  group: string;
+  key: string;
+}
 
 export interface AlertActivity {
   id: string;
@@ -30,13 +37,22 @@ export interface AlertState {
   read: boolean;
   done: boolean;
   assignee: string | null;
+  /** The response the company logged for this action (what was done). */
+  outcome: Outcome | null;
   tags: string[];
   comments: AlertComment[];
   activity: AlertActivity[];
 }
 
-/** People/teams an action can be assigned to. */
-export const ASSIGNEES = ["Legal Team", "Procurement", "Finance", "Eman Wed"];
+/** Teams an action can be assigned to. */
+export const ASSIGNEES = [
+  "Legal Team",
+  "Procurement",
+  "Finance",
+  "HR",
+  "IT",
+  "Operations",
+];
 /** Suggested tags for quick tagging. */
 export const SUGGESTED_TAGS_AR = ["أولوية عالية", "قيد التنفيذ", "بانتظار رد", "معلّق"];
 export const SUGGESTED_TAGS_EN = ["High priority", "In progress", "Waiting", "Blocked"];
@@ -46,6 +62,7 @@ const EMPTY: AlertState = {
   read: false,
   done: false,
   assignee: null,
+  outcome: null,
   tags: [],
   comments: [],
   activity: [],
@@ -67,6 +84,7 @@ interface NotificationsContextValue {
   markRead: (id: string) => void;
   markAllRead: (ids: string[]) => void;
   toggleDone: (id: string) => void;
+  resolveWithOutcome: (id: string, group: string, key: string) => void;
   setAssignee: (id: string, assignee: string | null) => void;
   addTag: (id: string, tag: string) => void;
   removeTag: (id: string, tag: string) => void;
@@ -111,9 +129,23 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
           ...s,
           done,
           read: true,
+          // Reopening clears any logged outcome — the action is open again.
+          outcome: done ? s.outcome : null,
           activity: [log(done ? "done" : "reopen"), ...s.activity],
         };
       }),
+    [patch],
+  );
+
+  const resolveWithOutcome = useCallback(
+    (id: string, group: string, key: string) =>
+      patch(id, (s) => ({
+        ...s,
+        done: true,
+        read: true,
+        outcome: { group, key },
+        activity: [log("outcome", `${group}:${key}`), ...s.activity],
+      })),
     [patch],
   );
 
@@ -184,6 +216,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       markRead,
       markAllRead,
       toggleDone,
+      resolveWithOutcome,
       setAssignee,
       addTag,
       removeTag,
@@ -195,6 +228,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       markRead,
       markAllRead,
       toggleDone,
+      resolveWithOutcome,
       setAssignee,
       addTag,
       removeTag,

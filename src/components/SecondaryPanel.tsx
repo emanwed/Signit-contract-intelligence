@@ -1,13 +1,9 @@
 "use client";
 
 import {
-  Archive,
   Bell,
-  CalendarClock,
   ClipboardCheck,
   Layers,
-  Rocket,
-  Search,
   ShieldCheck,
   Sparkles,
   type LucideIcon,
@@ -16,19 +12,20 @@ import { useApp } from "@/context/AppContext";
 import type { Dict } from "@/lib/i18n";
 import type { TabKey } from "@/lib/types";
 
+// Primary work views.
 const SUBNAV: [TabKey, LucideIcon, keyof Dict][] = [
   ["overview", Layers, "overview"],
-  ["obligations", CalendarClock, "obTab"],
-  ["search", Search, "ssTab"],
   ["notifications", ClipboardCheck, "notifications"],
+];
+
+// Configuration views — visually separated under a small "Settings" label.
+const SETTINGS_NAV: [TabKey, LucideIcon, keyof Dict][] = [
   ["settings", ShieldCheck, "complianceTab"],
   ["notifsettings", Bell, "notifSettingsTab"],
-  ["archive", Archive, "archiveTab"],
-  ["soon", Rocket, "soonTab"],
 ];
 
 // Pro-only sub-views — get a lock badge on the Free plan.
-const PRO_TABS = new Set<TabKey>(["obligations", "search"]);
+const PRO_TABS = new Set<TabKey>([]);
 
 /**
  * Second-layer navigation — the contextual panel for "Contract Intelligence",
@@ -60,50 +57,81 @@ export function SecondaryPanel({
       </div>
 
       <nav className="flex flex-col gap-1 mt-1" aria-label="Contract Intelligence">
-        {SUBNAV.map(([k, Ic, labelKey]) => {
-          const on = tab === k;
-          const badge = k === "notifications" ? actionCount : 0;
-          return (
-            <button
-              key={k}
-              onClick={() => onTab(k)}
-              aria-current={on ? "page" : undefined}
-              className="tap flex items-center gap-2.5 px-3 py-2 text-start"
-              style={{
-                borderRadius: 10,
-                fontSize: 14,
-                fontWeight: 500,
-                color: on ? "var(--accent)" : "var(--text)",
-                background: on ? "var(--accent-soft)" : "transparent",
-              }}
-            >
-              <Ic
-                size={18}
-                color={on ? "var(--accent)" : "var(--text-soft)"}
-                className="shrink-0"
-              />
-              <span className="flex-1 truncate">{L[labelKey] as string}</span>
-              {free && PRO_TABS.has(k) && (
-                <Sparkles size={13} color="var(--accent)" className="shrink-0" />
-              )}
-              {badge > 0 && (
-                <span
-                  style={{
-                    fontSize: 11,
-                    background: "var(--accent-soft)",
-                    color: "var(--accent)",
-                    borderRadius: 20,
-                    padding: "1px 7px",
-                    fontWeight: 700,
-                  }}
-                >
-                  {badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
+        {SUBNAV.map(([k, Ic, labelKey]) =>
+          renderRow(k, Ic, labelKey, tab, onTab, free, L, actionCount),
+        )}
+      </nav>
+
+      {/* Separator + small group label, then the configuration views */}
+      <div className="px-1">
+        <div style={{ height: 1, background: "var(--border)" }} />
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            color: "var(--text-soft)",
+            letterSpacing: 0.3,
+            marginTop: 10,
+          }}
+        >
+          {L.settings}
+        </div>
+      </div>
+
+      <nav className="flex flex-col gap-1" aria-label="Settings">
+        {SETTINGS_NAV.map(([k, Ic, labelKey]) =>
+          renderRow(k, Ic, labelKey, tab, onTab, free, L, actionCount),
+        )}
       </nav>
     </div>
+  );
+}
+
+function renderRow(
+  k: TabKey,
+  Ic: LucideIcon,
+  labelKey: keyof Dict,
+  tab: TabKey,
+  onTab: (t: TabKey) => void,
+  free: boolean,
+  L: Dict,
+  actionCount: number,
+) {
+  const on = tab === k;
+  const badge = k === "notifications" ? actionCount : 0;
+  return (
+    <button
+      key={k}
+      onClick={() => onTab(k)}
+      aria-current={on ? "page" : undefined}
+      className="tap flex items-center gap-2.5 px-3 py-2 text-start"
+      style={{
+        borderRadius: 10,
+        fontSize: 14,
+        fontWeight: 500,
+        color: on ? "var(--accent)" : "var(--text)",
+        background: on ? "var(--accent-soft)" : "transparent",
+      }}
+    >
+      <Ic size={18} color={on ? "var(--accent)" : "var(--text-soft)"} className="shrink-0" />
+      <span className="flex-1 truncate">{L[labelKey] as string}</span>
+      {free && PRO_TABS.has(k) && (
+        <Sparkles size={13} color="var(--accent)" className="shrink-0" />
+      )}
+      {badge > 0 && (
+        <span
+          style={{
+            fontSize: 11,
+            background: "var(--accent-soft)",
+            color: "var(--accent)",
+            borderRadius: 20,
+            padding: "1px 7px",
+            fontWeight: 700,
+          }}
+        >
+          {badge}
+        </span>
+      )}
+    </button>
   );
 }

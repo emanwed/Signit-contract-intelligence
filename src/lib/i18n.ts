@@ -213,6 +213,8 @@ export interface Dict {
   obCompliance: string;
   obNotice: string;
   obInsurance: string;
+  obRenewal: string;
+  obReview: string;
   tierOverdue: string;
   tierD1: string;
   tierD7: string;
@@ -233,18 +235,6 @@ export interface Dict {
   makeRoomTitle: string;
   makeRoomBody: string;
   makeRoomUpgrade: string;
-  soonTab: string;
-  soonIntro: string;
-  soonBadge: string;
-  soonFootnote: string;
-  archiveTab: string;
-  archiveIntro: string;
-  binDeleted: string;
-  binArchived: string;
-  binDeletedEmpty: string;
-  binArchivedEmpty: string;
-  restore: string;
-  archiveAction: string;
   actReview: string;
   actNotify: string;
   actNegotiate: string;
@@ -370,6 +360,9 @@ export interface Dict {
   taskDone: string;
   taskReopen: string;
   taskViewContract: string;
+  taskOutcome: string;
+  taskOutcomePrompt: string;
+  taskNextStep: string;
   actDone: string;
   actReopen: string;
   actAssigned: string;
@@ -377,6 +370,7 @@ export interface Dict {
   actTagAdd: string;
   actTagRemove: string;
   actComment: string;
+  actOutcome: string;
   notBuiltTitle: string;
   notBuiltBody: string;
   valuesTab: string;
@@ -484,7 +478,7 @@ export const T: Record<Lang, Dict> = {
     exportContract: "تصدير",
     editContract: "تعديل",
     saveChanges: "حفظ التغييرات",
-    deleteContract: "حذف",
+    deleteContract: "حذف العقد",
     confirmDelete: "تأكيد الحذف؟",
     none: "غير محدّد",
     vat: "ضريبة القيمة المضافة",
@@ -578,12 +572,14 @@ export const T: Record<Lang, Dict> = {
     obTab: "الالتزامات",
     obCalTitle: "تقويم الالتزامات",
     obIntro:
-      "كل التزام له موعد نهائي على تقويم موحّد — تنبيهات قبل ٣٠ و٧ و١ يوم، مع إشعار المسؤول وتصعيد للمدير عند التأخّر.",
+      "كل ما يحتاج إلى إجراء في مكان واحد — تجديدات ومدفوعات وتسليمات وامتثال وإشعارات ومراجعات — مرتّبة حسب الاستحقاق، مع إشعار المسؤول وتصعيد للمدير عند التأخّر.",
     obPayment: "دفع",
     obDeliverable: "تسليم",
     obCompliance: "امتثال",
     obNotice: "إشعار",
     obInsurance: "تأمين",
+    obRenewal: "تجديد",
+    obReview: "مراجعة",
     tierOverdue: "متأخّر",
     tierD1: "خلال يوم",
     tierD7: "خلال ٧ أيام",
@@ -596,7 +592,7 @@ export const T: Record<Lang, Dict> = {
     obEmpty: "لا التزامات مسجّلة.",
     ssTab: "بحث دلالي",
     notifSettingsTab: "إعدادات التنبيهات",
-    complianceTab: "الامتثال والقواعد",
+    complianceTab: "الامتثال والسياسات",
     notifSettingsIntro: "اختر كيف تصلك التنبيهات وأي أنواع منها تريد أن تستقبل.",
     notifUnreadOnly: "غير المقروءة",
     notifNoUnread: "لا توجد تنبيهات غير مقروءة",
@@ -604,18 +600,6 @@ export const T: Record<Lang, Dict> = {
     makeRoomTitle: "أفسِح مكانًا لعقد جديد",
     makeRoomBody: "خطتك المجانية تتضمّن ٣ عقود نشطة. احذف أحدها لإضافة عقد جديد.",
     makeRoomUpgrade: "أو رقِّ لعقود غير محدودة",
-    soonTab: "قريبًا",
-    soonIntro: "ميزات قادمة تُكمل تجربتك — نعمل عليها الآن.",
-    soonBadge: "قريبًا",
-    soonFootnote: "تريد إحداها أبكر؟ أخبر فريقنا.",
-    archiveTab: "الأرشيف والمحذوفة",
-    archiveIntro: "لا يُفقد أي عقد عند الحذف — يبقى هنا. استعِده للمحفظة أو أرشِفه للحفظ طويل المدى.",
-    binDeleted: "المحذوفة",
-    binArchived: "المؤرشفة",
-    binDeletedEmpty: "لا توجد عقود محذوفة",
-    binArchivedEmpty: "لا توجد عقود مؤرشفة",
-    restore: "استعادة",
-    archiveAction: "أرشفة",
     actReview: "راجِع",
     actNotify: "أخطِر",
     actNegotiate: "فاوض",
@@ -624,7 +608,7 @@ export const T: Record<Lang, Dict> = {
     actVerify: "وثّق",
     actDetails: "التفاصيل",
     ssTitle: "البحث الدلالي في العقود",
-    ssIntro: "تصبح البنود متجهات، فيجد الاستعلام التطابق بالمعنى — لا بالكلمات فقط.",
+    ssIntro: "ابحث بالمعنى لا بالكلمة: اكتب سؤالك بلغتك، ويعرض لك النظام العقود والبنود ذات الصلة حتى لو اختلفت صياغتها عن كلماتك.",
     ssPlaceholder: "ابحث بالمعنى… مثال: التزامات المسؤولية",
     ssSim: "تشابه",
     ssSimNote:
@@ -747,6 +731,10 @@ export const T: Record<Lang, Dict> = {
     taskDone: "منجَز",
     taskReopen: "إعادة فتح",
     taskViewContract: "عرض العقد",
+    taskOutcome: "الإجراء المتّخذ",
+    taskOutcomePrompt: "سجّل ما تم لتحديث النظام وإنشاء الإجراء التالي:",
+    taskNextStep: "الخطوة التالية في النظام",
+    actOutcome: "سجّل الإجراء المتّخذ:",
     actDone: "علّم الإجراء كمنجَز",
     actReopen: "أعاد فتح الإجراء",
     actAssigned: "أسند الإجراء إلى",
@@ -885,7 +873,7 @@ export const T: Record<Lang, Dict> = {
     exportContract: "Export",
     editContract: "Edit",
     saveChanges: "Save changes",
-    deleteContract: "Delete",
+    deleteContract: "Delete contract",
     confirmDelete: "Confirm delete?",
     none: "Not specified",
     vat: "VAT",
@@ -979,12 +967,14 @@ export const T: Record<Lang, Dict> = {
     obTab: "Obligations",
     obCalTitle: "Obligation calendar",
     obIntro:
-      "Every obligation with a deadline on one calendar — alerts at 30, 7 and 1 day, the owner is notified, and it escalates to their manager if missed.",
+      "Everything that needs action in one place — renewals, payments, deliverables, compliance, notices and reviews — ordered by due date, with the owner notified and escalation to their manager if missed.",
     obPayment: "Payment",
     obDeliverable: "Deliverable",
     obCompliance: "Compliance",
     obNotice: "Notice",
     obInsurance: "Insurance",
+    obRenewal: "Renewal",
+    obReview: "Review",
     tierOverdue: "Overdue",
     tierD1: "Within 1 day",
     tierD7: "Within 7 days",
@@ -997,7 +987,7 @@ export const T: Record<Lang, Dict> = {
     obEmpty: "No obligations tracked.",
     ssTab: "Semantic search",
     notifSettingsTab: "Notification settings",
-    complianceTab: "Compliance & rules",
+    complianceTab: "Compliance & policies",
     notifSettingsIntro: "Choose how alerts reach you and which types you want to receive.",
     notifUnreadOnly: "Unread only",
     notifNoUnread: "No unread notifications",
@@ -1005,18 +995,6 @@ export const T: Record<Lang, Dict> = {
     makeRoomTitle: "Make room for a new contract",
     makeRoomBody: "Your free plan includes 3 active contracts. Delete one to add a new one.",
     makeRoomUpgrade: "Or upgrade for unlimited contracts",
-    soonTab: "Coming soon",
-    soonIntro: "Features on the way to complete your experience — in the works now.",
-    soonBadge: "Soon",
-    soonFootnote: "Want one of these sooner? Tell our team.",
-    archiveTab: "Archive & trash",
-    archiveIntro: "Nothing is lost when you delete — it lands here. Restore it to the portfolio, or archive it for long-term keeping.",
-    binDeleted: "Deleted",
-    binArchived: "Archived",
-    binDeletedEmpty: "No deleted contracts",
-    binArchivedEmpty: "No archived contracts",
-    restore: "Restore",
-    archiveAction: "Archive",
     actReview: "Review",
     actNotify: "Notify",
     actNegotiate: "Negotiate",
@@ -1025,7 +1003,7 @@ export const T: Record<Lang, Dict> = {
     actVerify: "Verify",
     actDetails: "Details",
     ssTitle: "Semantic contract search",
-    ssIntro: "Clauses become vectors, so a query finds matches by meaning — not just keywords.",
+    ssIntro: "Search by meaning, not exact words: type your question in plain language and the system surfaces the relevant contracts and clauses even when their wording differs from yours.",
     ssPlaceholder: "Search by meaning… e.g. liability obligations",
     ssSim: "sim",
     ssSimNote:
@@ -1148,6 +1126,10 @@ export const T: Record<Lang, Dict> = {
     taskDone: "Done",
     taskReopen: "Reopen",
     taskViewContract: "View contract",
+    taskOutcome: "Action taken",
+    taskOutcomePrompt: "Log what happened so the system updates and schedules the next action:",
+    taskNextStep: "System's next step",
+    actOutcome: "logged the action taken:",
     actDone: "marked the action done",
     actReopen: "reopened the action",
     actAssigned: "assigned the action to",

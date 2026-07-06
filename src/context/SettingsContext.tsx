@@ -9,6 +9,8 @@ export interface CompanyDoc {
   id: string;
   name: string;
   size: number;
+  /** Whether this document is applied when reviewing contracts. */
+  enabled: boolean;
 }
 
 interface SettingsContextValue {
@@ -17,6 +19,7 @@ interface SettingsContextValue {
   companyDocs: CompanyDoc[];
   addCompanyDocs: (files: { name: string; size: number }[]) => void;
   removeCompanyDoc: (id: string) => void;
+  toggleCompanyDoc: (id: string) => void;
   /** On/off for email notifications only (in-app alerts are unaffected). */
   emailNotifications: boolean;
   toggleEmailNotifications: () => void;
@@ -61,6 +64,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           name: f.name,
           size: f.size,
+          enabled: true,
         })),
         ...prev,
       ]);
@@ -72,6 +76,12 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     setCompanyDocs((prev) => prev.filter((d) => d.id !== id));
   }, []);
 
+  const toggleCompanyDoc = useCallback((id: string) => {
+    setCompanyDocs((prev) =>
+      prev.map((d) => (d.id === id ? { ...d, enabled: !d.enabled } : d)),
+    );
+  }, []);
+
   const value = useMemo<SettingsContextValue>(
     () => ({
       checks,
@@ -79,6 +89,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       companyDocs,
       addCompanyDocs,
       removeCompanyDoc,
+      toggleCompanyDoc,
       emailNotifications,
       toggleEmailNotifications,
       alertPrefs,
@@ -90,6 +101,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       companyDocs,
       addCompanyDocs,
       removeCompanyDoc,
+      toggleCompanyDoc,
       emailNotifications,
       toggleEmailNotifications,
       alertPrefs,

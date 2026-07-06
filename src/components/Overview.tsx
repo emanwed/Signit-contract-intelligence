@@ -52,19 +52,29 @@ export function Overview({
   const { contracts } = useContracts();
   const { checks } = useSettings();
 
-  const ins = useMemo(() => portfolioInsights(contracts, checks), [contracts, checks]);
+  // Free only reflects the user's own uploaded contracts in its insights; the
+  // full seed portfolio is Pro sample data.
+  const insightContracts = useMemo(
+    () => (free ? contracts.filter((c) => c.source === "added") : contracts),
+    [free, contracts],
+  );
+
+  const ins = useMemo(
+    () => portfolioInsights(insightContracts, checks),
+    [insightContracts, checks],
+  );
 
   const topParty = useMemo(
-    () => [...contracts].sort((a, b) => b.valueSAR - a.valueSAR)[0],
-    [contracts],
+    () => [...insightContracts].sort((a, b) => b.valueSAR - a.valueSAR)[0],
+    [insightContracts],
   );
   const firstPdpl = useMemo(
-    () => contracts.find((c) => c.facts.some((f) => f.k === "pdpl")),
-    [contracts],
+    () => insightContracts.find((c) => c.facts.some((f) => f.k === "pdpl")),
+    [insightContracts],
   );
   const firstHighRisk = useMemo(
-    () => contracts.find((c) => c.risk === "high"),
-    [contracts],
+    () => insightContracts.find((c) => c.risk === "high"),
+    [insightContracts],
   );
 
   // A KPI drill-down sets the shared filter and scrolls to the register below.
@@ -217,7 +227,7 @@ export function Overview({
               sub={ar ? "تسليم أو دفع متأخر لدى موردين" : "late delivery or payment at vendors"}
               tone="var(--low)"
               action={L.actClaim}
-              onClick={() => onTab("obligations")}
+              onClick={() => onTab("notifications")}
             />
             <Stat
               icon={PiggyBank}
@@ -291,24 +301,6 @@ export function Overview({
         )}
       </div>
 
-      {/* Trust note — the core promise of source-linked confidence */}
-      <div
-        className="rise flex items-start gap-2 mt-4 p-3"
-        style={{
-          background: "var(--accent-soft)",
-          borderRadius: 12,
-          fontSize: 12.5,
-          color: "var(--text)",
-        }}
-      >
-        <ShieldCheck
-          size={16}
-          color="var(--accent)"
-          style={{ flexShrink: 0, marginTop: 1 }}
-        />
-        <span>{L.trustNote}</span>
-      </div>
-
       {/* Contract register — search, filters, sorting, pagination */}
       <div ref={listRef} className="mt-5" style={{ scrollMarginTop: 92 }}>
         <ContractsList filter={filter} setFilter={setFilter} onOpen={onOpen} />
@@ -335,7 +327,7 @@ function ProKpiCard({
       style={{
         background: "var(--accent-soft)",
         border: "1px dashed var(--accent)",
-        borderRadius: 16,
+        borderRadius: 18,
         padding: 18,
         cursor: "pointer",
       }}

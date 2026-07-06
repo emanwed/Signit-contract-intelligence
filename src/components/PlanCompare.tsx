@@ -173,8 +173,8 @@ export function PlanCompareModal({ onClose }: { onClose: () => void }) {
                 onClick={upgrade}
                 className="tap flex-1 flex items-center justify-center gap-2 py-3"
                 style={{
-                  background: "var(--grad-primary)",
-                  color: "var(--on-accent)",
+                  background: "var(--cta)",
+                  color: "var(--cta-ink)",
                   border: "none",
                   borderRadius: 12,
                   fontSize: 14,
